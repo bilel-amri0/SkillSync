@@ -1,0 +1,49 @@
+VOTRE NOM
+votre.email@example.com | +33 6 XX XX XX XX | LinkedIn: votre-profil | Ville, France
+
+PROFESSIONAL SUMMARY
+Describe your professional experience and passion for technology here.
+
+TECHNICAL SKILLS
+Programming Languages: Python, JavaScript, Java
+Web Technologies: React, Node.js, HTML5, CSS3
+Tools & Frameworks: Git, Django, Express
+
+EDUCATION
+Master en Informatique
+Université/École | Ville | Années
+• Relevant Coursework: Data Structures, Algorithms, Web Development
+• Mention/GPA: 
+
+WORK EXPERIENCE
+
+Software Engineer
+Nom de l'entreprise | Ville | Date début - Date fin
+• Description de vos responsabilités et réalisations
+• Accomplissement quantifié avec des métriques
+• Technologies utilisées et projets menés
+
+Stage/Internship
+Nom de l'entreprise | Ville | Date début - Date fin
+• Description de votre stage
+• Projets réalisés
+• Compétences développées
+
+PROJECTS
+Nom du Projet (Année)
+• Description du projet et technologies utilisées
+• Résultats obtenus ou impact
+
+CERTIFICATIONS
+• Certification name (Année)
+• Autre certification (Année)
+
+LANGUAGES
+• Français (Natif)
+• Anglais (Courant)
+• Autre langue (Niveau)
+
+INTERESTS
+• Vos centres d'intérêt et loisirs
+• Technologies émergentes
+• Autres activités

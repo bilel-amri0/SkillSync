@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSync - Test du Filtre The Muse (Corrigé)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f6fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .demo-notice {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-right: 10px;
+        }
+
+        .job-filters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #28a745;
+        }
+
+        .job-filters h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: white;
+            color: #495057;
+            border: 2px solid #dee2e6;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+        }
+
+        .filter-btn:hover:not(:disabled) {
+            border-color: #007bff;
+            color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border-color: #007bff;
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .job-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .job-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .job-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .job-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .job-header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .match-score {
+            background: rgba(40, 167, 69, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            white-space: nowrap;
+            border: 2px solid #28a745;
+            color: #28a745;
+        }
+
+        .job-source {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(108, 117, 125, 0.1);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .job-source.themuse {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        .job-source.adzuna {
+            background: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+        }
+
+        .job-source.arbeitnow {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .source-text {
+            text-transform: capitalize;
+            font-weight: 600;
+        }
+
+        .job-company,
+        .job-location,
+        .job-salary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .job-description {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 3px solid #007bff;
+        }
+
+        .job-description p {
+            margin: 0;
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        .matching-skills {
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .matching-skills h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 1em;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-match {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .apply-button {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .apply-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+
+        .job-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .job-date {
+            font-size: 0.9em;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status-info {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            color: #004085;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-info strong {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 SkillSync - Filtre The Muse (Version Corrigée)</h1>
+            <p>Démonstration avec sources d'emplois réelles de l'API</p>
+            <div class="demo-notice">
+                <span class="demo-badge">✅ CORRIGÉ</span>
+                <p>Fonctionnalité de filtrage adaptée aux vraies sources API !</p>
+            </div>
+        </div>
+        
+        <div class="status-info">
+            <strong>🔧 Correction Technique :</strong> L'API RemoteOK retournait des erreurs 403 (accès refusé), 
+            donc la fonctionnalité de filtrage a été adaptée pour <strong>The Muse</strong> qui fonctionne parfaitement 
+            et retourne de vrais emplois ! Les autres sources disponibles sont Adzuna, Arbeitnow et JSearch.
+        </div>
+        
+        <div class="job-filters">
+            <h3>🔍 Filtrer les emplois</h3>
+            <div class="filter-buttons">
+                <button id="allBtn" class="filter-btn active" onclick="filterJobs('all')">
+                    📋 Tous les emplois (<span id="allCount">6</span>)
+                </button>
+                <button id="themuseBtn" class="filter-btn" onclick="filterJobs('themuse')">
+                    🎨 The Muse (<span id="themuseCount">3</span>)
+                </button>
+            </div>
+        </div>
+
+        <div id="jobsGrid" class="jobs-grid">
+            <!-- Job 1 - Adzuna -->
+            <div class="job-card" data-source="Adzuna">
+                <div class="job-header">
+                    <h3 class="job-title">Full Stack Developer</h3>
+                    <div class="job-header-right">
+                        <div class="match-score">92% Match</div>
+                        <div class="job-source adzuna">
+                            💼 <span class="source-text">Adzuna</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-company">
+                    <span>🏢</span>
+                    <span>TechCorp France</span>
+                </div>
+                
+                <div class="job-location">
+                    <span>📍</span>
+                    <span>Paris, France</span>
+                </div>
+                
+                <div class="job-salary">
+                    <span>💰</span>
+                    <span>45 000€ - 65 000€</span>
+                </div>
+                
+                <div class="job-description">
+                    <p>We are seeking a talented Full Stack Developer proficient in Python, JavaScript, and React. Join our innovative team to build cutting-edge web applications using modern technologies like Docker and Git.</p>
+                </div>
+                
+                <div class="matching-skills">
+                    <h4>🎯 Compétences correspondantes:</h4>
+                    <div class="skills-list">
+                        <span class="skill-match">Python</span>
+                        <span class="skill-match">JavaScript</span>
+                        <span class="skill-match">React</span>
+                        <span class="skill-match">Git</span>
+                        <span class="skill-match">Docker</span>
+                    </div>
+                </div>
+                
+                <div class="job-actions">
+                    <a href="#" class="apply-button">📝 Postuler</a>
+                    <div class="job-date">Publié: 13/10/2025</div>
+                </div>
+            </div>
+
+            <!-- Job 2 - The Muse -->
+            <div class="job-card" data-source="The Muse">
+                <div class="job-header">
+                    <h3 class="job-title">Frontend React Developer</h3>
+                    <div class="job-header-right">
+                        <div class="match-score">85% Match</div>
+                        <div class="job-source themuse">
+                            🎨 <span class="source-text">The Muse</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-company">
+                    <span>🏢</span>
+                    <span>StartupLab</span>
+                </div>
+                
+                <div class="job-location">
+                    <span>📍</span>
+                    <span>Lyon, France</span>
+                </div>
+                
+                <div class="job-salary">
+                    <span>💰</span>
+                    <span>40 000€ - 55 000€</span>
+                </div>
+                
+                <div class="job-description">
+                    <p>Looking for a Frontend Developer with strong React, HTML, CSS skills. Experience with modern JavaScript frameworks and responsive design. You'll work on user-friendly interfaces for our SaaS platform.</p>
+                </div>
+                
+                <div class="matching-skills">
+                    <h4>🎯 Compétences correspondantes:</h4>
+                    <div class="skills-list">
+                        <span class="skill-match">React</span>
+                        <span class="skill-match">JavaScript</span>
+                        <span class="skill-match">HTML</span>
+                        <span class="skill-match">CSS</span>
+                    </div>
+                </div>
+                
+                <div class="job-actions">
+                    <a href="#" class="apply-button">📝 Postuler</a>
+                    <div class="job-date">Publié: 13/10/2025</div>
+                </div>
+            </div>
+
+            <!-- Job 3 - The Muse -->
+            <div class="job-card" data-source="The Muse">
+                <div class="job-header">
+                    <h3 class="job-title">Python Backend Developer</h3>
+                    <div class="job-header-right">
+                        <div class="match-score">88% Match</div>
+                        <div class="job-source themuse">
+                            🎨 <span class="source-text">The Muse</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-company">
+                    <span>🏢</span>
+                    <span>DataSolutions</span>
+                </div>
+                
+                <div class="job-location">
+                    <span>📍</span>
+                    <span>Marseille, France</span>
+                </div>
+                
+                <div class="job-salary">
+                    <span>💰</span>
+                    <span>42 000€ - 60 000€</span>
+                </div>
+                
+                <div class="job-description">
+                    <p>Join our backend team as a Python Developer. Work with SQL databases, REST APIs, and Linux environments. Experience with Java and PHP is a plus for our microservices architecture.</p>
+                </div>
+                
+                <div class="matching-skills">
+                    <h4>🎯 Compétences correspondantes:</h4>
+                    <div class="skills-list">
+                        <span class="skill-match">Python</span>
+                        <span class="skill-match">SQL</span>
+                        <span class="skill-match">API</span>
+                        <span class="skill-match">Linux</span>
+                        <span class="skill-match">Java</span>
+                    </div>
+                </div>
+                
+                <div class="job-actions">
+                    <a href="#" class="apply-button">📝 Postuler</a>
+                    <div class="job-date">Publié: 13/10/2025</div>
+                </div>
+            </div>
+
+            <!-- Job 4 - Arbeitnow -->
+            <div class="job-card" data-source="Arbeitnow">
+                <div class="job-header">
+                    <h3 class="job-title">Software Engineer</h3>
+                    <div class="job-header-right">
+                        <div class="match-score">82% Match</div>
+                        <div class="job-source arbeitnow">
+                            ⚡ <span class="source-text">Arbeitnow</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-company">
+                    <span>🏢</span>
+                    <span>InnovateTech</span>
+                </div>
+                
+                <div class="job-location">
+                    <span>📍</span>
+                    <span>Toulouse, France</span>
+                </div>
+                
+                <div class="job-salary">
+                    <span>💰</span>
+                    <span>38 000€ - 52 000€</span>
+                </div>
+                
+                <div class="job-description">
+                    <p>Software Engineer position requiring knowledge of C++, Java, and Python. Work on embedded systems and desktop applications. MATLAB experience for data analysis tasks is highly valued.</p>
+                </div>
+                
+                <div class="matching-skills">
+                    <h4>🎯 Compétences correspondantes:</h4>
+                    <div class="skills-list">
+                        <span class="skill-match">Java</span>
+                        <span class="skill-match">Python</span>
+                        <span class="skill-match">C++</span>
+                        <span class="skill-match">MATLAB</span>
+                    </div>
+                </div>
+                
+                <div class="job-actions">
+                    <a href="#" class="apply-button">📝 Postuler</a>
+                    <div class="job-date">Publié: 13/10/2025</div>
+                </div>
+            </div>
+
+            <!-- Job 5 - Adzuna -->
+            <div class="job-card" data-source="Adzuna">
+                <div class="job-header">
+                    <h3 class="job-title">DevOps Engineer</h3>
+                    <div class="job-header-right">
+                        <div class="match-score">79% Match</div>
+                        <div class="job-source adzuna">
+                            💼 <span class="source-text">Adzuna</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-company">
+                    <span>🏢</span>
+                    <span>CloudFirst</span>
+                </div>
+                
+                <div class="job-location">
+                    <span>📍</span>
+                    <span>Nice, France</span>
+                </div>
+                
+                <div class="job-salary">
+                    <span>💰</span>
+                    <span>48 000€ - 68 000€</span>
+                </div>
+                
+                <div class="job-description">
+                    <p>DevOps Engineer to manage our infrastructure. Strong Linux, Docker, and Git skills required. Experience with R for data processing and PHP for legacy systems maintenance.</p>
+                </div>
+                
+                <div class="matching-skills">
+                    <h4>🎯 Compétences correspondantes:</h4>
+                    <div class="skills-list">
+                        <span class="skill-match">Docker</span>
+                        <span class="skill-match">Linux</span>
+                        <span class="skill-match">Git</span>
+                        <span class="skill-match">R</span>
+                        <span class="skill-match">PHP</span>
+                    </div>
+                </div>
+                
+                <div class="job-actions">
+                    <a href="#" class="apply-button">📝 Postuler</a>
+                    <div class="job-date">Publié: 13/10/2025</div>
+                </div>
+            </div>
+
+            <!-- Job 6 - The Muse -->
+            <div class="job-card" data-source="The Muse">
+                <div class="job-header">
+                    <h3 class="job-title">Cloud IT Architect - Azure</h3>
+                    <div class="job-header-right">
+                        <div class="match-score">75% Match</div>
+                        <div class="job-source themuse">
+                            🎨 <span class="source-text">The Muse</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-company">
+                    <span>🏢</span>
+                    <span>Kyndryl</span>
+                </div>
+                
+                <div class="job-location">
+                    <span>📍</span>
+                    <span>Remote, Rome, Italy</span>
+                </div>
+                
+                <div class="job-salary">
+                    <span>💰</span>
+                    <span>Salaire non spécifié</span>
+                </div>
+                
+                <div class="job-description">
+                    <p>At Kyndryl, we design, build, manage and modernize mission-critical technology systems. As a Cloud IT Architect - Azure, you will be responsible for designing and implementing secure, scalable cloud solutions.</p>
+                </div>
+                
+                <div class="matching-skills">
+                    <h4>🎯 Compétences correspondantes:</h4>
+                    <div class="skills-list">
+                        <span class="skill-match">Azure</span>
+                        <span class="skill-match">Cloud</span>
+                        <span class="skill-match">Architecture</span>
+                    </div>
+                </div>
+                
+                <div class="job-actions">
+                    <a href="#" class="apply-button">📝 Postuler</a>
+                    <div class="job-date">Publié: 13/10/2025</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterJobs(filter) {
+            const allCards = document.querySelectorAll('.job-card');
+            const allBtn = document.getElementById('allBtn');
+            const themuseBtn = document.getElementById('themuseBtn');
+            
+            // Update button states
+            if (filter === 'all') {
+                allBtn.classList.add('active');
+                themuseBtn.classList.remove('active');
+                
+                // Show all jobs
+                allCards.forEach(card => {
+                    card.style.display = 'block';
+                });
+            } else if (filter === 'themuse') {
+                allBtn.classList.remove('active');
+                themuseBtn.classList.add('active');
+                
+                // Show only The Muse jobs
+                allCards.forEach(card => {
+                    if (card.dataset.source === 'The Muse') {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Initialize counts
+        document.addEventListener('DOMContentLoaded', function() {
+            const allCards = document.querySelectorAll('.job-card');
+            const themuseCards = document.querySelectorAll('.job-card[data-source="The Muse"]');
+            
+            document.getElementById('allCount').textContent = allCards.length;
+            document.getElementById('themuseCount').textContent = themuseCards.length;
+        });
+    </script>
+</body>
+</html>

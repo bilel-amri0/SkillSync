@@ -1,0 +1,287 @@
+# SkillSync Enhanced - Complete Requirements
+# ==========================================
+# All dependencies for F1-F8 enhanced features
+# 
+# F1: CV Upload & Analysis
+# F2: Job Matching & Analytics
+# F3: Skill Gap Analysis
+# F4: Career Recommendations
+# F5: Portfolio Builder
+# F6: Interactive Dashboard
+# F7: Experience Translator (NLG)
+# F8: Explainable AI (XAI)
+
+# Core Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Data Processing & Analysis
+pandas==2.1.3
+numpy==1.25.2
+scipy==1.11.4
+scikit-learn==1.3.2
+joblib==1.3.2
+
+# Machine Learning & AI
+tensorflow==2.15.0
+torch==2.1.1
+transformers==4.36.0
+sentence-transformers==2.2.2
+spacy==3.7.2
+nltk==3.8.1
+gensim==4.3.2
+
+# Computer Vision & OCR
+opencv-python==4.8.1.78
+pytesseract==0.3.10
+Pillow==10.1.0
+pdf2image==1.17.0
+
+# Document Processing
+python-docx==1.1.0
+openpyxl==3.1.2
+pypdf2==3.0.1
+python-docx2txt==0.8
+
+# NLP & Text Processing
+textblob==0.17.1
+pattern3==3.6
+wordcloud==1.9.2
+textstat==0.7.3
+
+# Explainable AI (XAI)
+shap==0.43.0
+lime==0.2.0.1
+eli5==0.15.2
+interpret==0.4.1
+
+# Natural Language Generation
+gpt3-demo==0.1.0
+text-generation-webui==1.7.2
+transformers-tools==0.2.2
+
+# Web Scraping & APIs
+requests==2.31.0
+beautifulsoup4==4.12.2
+selenium==4.15.2
+linkedin-scraper==1.2.3
+indeed-scraper==0.3.3
+
+# Job Board APIs
+adzuna==1.6.7
+jobs-api==2.2.0
+jobspy==1.0.5
+
+# Data Storage
+sqlalchemy==2.0.23
+alembic==1.13.0
+redis==5.0.1
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+cryptography==41.0.8
+
+# File Upload & Storage
+aiofiles==23.2.1
+python-magic==0.4.27
+mimetypes==1.0.0
+
+# Background Tasks
+celery==5.3.4
+redis==5.0.1
+rq==1.15.1
+
+# Monitoring & Logging
+prometheus-client==0.19.0
+sentry-sdk[fastapi]==1.38.0
+structlog==23.2.0
+
+# Configuration & Environment
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+click==8.1.7
+
+# HTTP Client & Async
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Date & Time
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Utilities
+typing-extensions==4.8.0
+pydantic==2.5.0
+rich==13.7.0
+typer==0.9.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Machine Learning Models & Datasets
+datasets==2.16.1
+datasets[audio]==2.16.1
+datasets[image]==2.16.1
+datasets[vision]==2.16.1
+
+# Advanced NLP Models
+allennlp==2.10.1
+stanza==1.7.0
+polyglot==16.7.4
+
+# Specialized ML Libraries
+faiss-cpu==1.7.4
+umap-learn==0.5.4
+hdbscan==0.8.33
+category-encoders==2.6.3
+imbalanced-learn==0.12.0
+
+# Web Framework Enhancements
+jinja2==3.1.2
+markdown==3.5.1
+markupsafe==2.1.3
+
+# Data Visualization (Backend)
+matplotlib==3.8.2
+seaborn==0.13.0
+plotly==5.17.0
+bokeh==3.3.1
+
+# Statistical Analysis
+statsmodels==0.14.0
+arch==5.3.1
+tslearn==0.6.2
+
+# API Documentation
+fastapi[all]==0.104.1
+
+# Performance & Caching
+cachetools==5.3.2
+aiocache==0.12.2
+
+# Process Management
+psutil==5.9.6
+supervisor==4.2.5
+
+# Networking & Communication
+websockets==12.0
+pyotp==2.9.0
+qrcode==7.4.2
+
+# File System
+watchdog==3.0.0
+pathos==0.3.1
+dill==0.3.7
+
+# Data Validation
+cerberus==1.3.5
+voluptuous==0.13.1
+
+# Async Programming
+asyncio-mqtt==0.16.1
+aioredis==2.0.1
+
+# Security Headers
+secure==0.3.0
+python-security==0.36
+
+# Rate Limiting
+slowapi==0.1.9
+aiolimiter==1.1.0
+
+# Export & Import
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+tabulate==0.9.0
+
+# Knowledge Graphs
+networkx==3.2.1
+pyvis==0.3.2
+
+# Clustering & Similarity
+annoy==1.17.0
+nmslib==2.1.1
+
+# Time Series Analysis
+fbprophet==1.1.1
+pmdarima==2.0.4
+
+# Audio Processing (for voice CVs)
+librosa==0.10.1
+soundfile==0.12.1
+
+# Image Processing for CV templates
+imageio==2.31.6
+scikit-image==0.22.0
+
+# Geographic Data (for job locations)
+geopy==2.4.0
+folium==0.15.1
+
+# Blockchain/Token integration (future)
+web3==6.11.4
+
+# Microservices Communication
+pydantic-rabbitmq==0.2.0
+
+# Advanced Search
+elasticsearch==8.11.0
+whoosh==2.7.4
+
+# Content Management
+markdown2==2.4.13
+bleach==6.1.0
+
+# Workflow Automation
+Prefect==2.13.6
+luigi==3.5.1
+
+# Natural Language Understanding
+rasa==3.6.6
+dialogflow==2.0.2
+
+# Knowledge Base
+langchain==0.1.0
+chromadb==0.4.18
+
+# Recommendation Systems
+lightfm==1.17
+implicit==0.7.2
+
+# Advanced Analytics
+knime-sdk==1.0.0
+orange3==3.35.0
+
+# Augmented Reality features (future)
+aruco==3.1.0
+opencv-contrib-python==4.8.1.78
+
+# Machine Learning Interpretability
+scikit-plot==0.3.7
+yellowbrick==1.5
+
+# Data Quality
+great-expectations==0.18.8
+pandas-profiling==3.6.6
+
+# Model Registry
+mlflow==2.8.1
+wandb==0.16.0
+
+# Advanced NLP
+spacy-transformers==1.3.2
+profanity==1.1.2
+
+# Career Guidance
+career-tools==0.1.0
+joblib-extensions==1.4.0

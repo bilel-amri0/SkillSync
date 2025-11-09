@@ -1,0 +1,154 @@
+{
+  "demo_results": [
+    {
+      "user_profile": {
+        "user_id": "user_001_junior_backend",
+        "cv_data": {
+          "summary": "Développeur backend junior passionné par Python et les APIs",
+          "experience_text": "Stage de 6 mois chez une startup, développement d'APIs REST"
+        },
+        "current_skills": [
+          "Python",
+          "Flask",
+          "SQL",
+          "Git",
+          "REST APIs"
+        ],
+        "experience_years": 1,
+        "current_role": "Junior Backend Developer",
+        "industry": "Tech",
+        "level": "junior",
+        "career_goals": [
+          "Full-Stack Developer",
+          "Senior Backend",
+          "Tech Lead"
+        ],
+        "learning_preferences": {
+          "style": [
+            "hands-on",
+            "structured"
+          ],
+          "difficulty_preference": "intermediate"
+        },
+        "time_availability": "10-15h/week",
+        "budget_constraints": {
+          "monthly_budget": 100,
+          "certification_budget": 500
+        }
+      },
+      "recommendations_count": {
+        "skills": 1,
+        "projects": 0,
+        "certifications": 2,
+        "roadmaps": 0
+      },
+      "confidence": 0.8590978413550584,
+      "generated_at": "2025-10-17T23:57:12.873076"
+    },
+    {
+      "user_profile": {
+        "user_id": "user_002_data_analyst",
+        "cv_data": {
+          "summary": "Analyste data avec 3 ans d'expérience, transition vers data science",
+          "experience_text": "Analyse de données business, reporting, dashboards avec Excel et SQL"
+        },
+        "current_skills": [
+          "Excel",
+          "SQL",
+          "PowerBI",
+          "Statistics",
+          "Python"
+        ],
+        "experience_years": 3,
+        "current_role": "Data Analyst",
+        "industry": "Finance",
+        "level": "mid",
+        "career_goals": [
+          "Data Scientist",
+          "ML Engineer",
+          "AI Specialist"
+        ],
+        "learning_preferences": {
+          "style": [
+            "self-paced",
+            "project-based"
+          ],
+          "difficulty_preference": "advanced"
+        },
+        "time_availability": "8-12h/week",
+        "budget_constraints": {
+          "monthly_budget": 200,
+          "certification_budget": 1000
+        }
+      },
+      "recommendations_count": {
+        "skills": 1,
+        "projects": 0,
+        "certifications": 2,
+        "roadmaps": 0
+      },
+      "confidence": 0.8863532096953953,
+      "generated_at": "2025-10-17T23:57:12.873475"
+    },
+    {
+      "user_profile": {
+        "user_id": "user_003_senior_dev",
+        "cv_data": {
+          "summary": "Développeur senior full-stack avec expertise cloud, transition vers architecture",
+          "experience_text": "7 ans de développement, lead technique sur projets complexes"
+        },
+        "current_skills": [
+          "JavaScript",
+          "React",
+          "Node.js",
+          "AWS",
+          "Docker",
+          "Kubernetes",
+          "PostgreSQL",
+          "MongoDB"
+        ],
+        "experience_years": 7,
+        "current_role": "Senior Full-Stack Developer",
+        "industry": "FinTech",
+        "level": "senior",
+        "career_goals": [
+          "Solutions Architect",
+          "Tech Lead",
+          "CTO"
+        ],
+        "learning_preferences": {
+          "style": [
+            "strategic",
+            "hands-on"
+          ],
+          "difficulty_preference": "expert"
+        },
+        "time_availability": "5-8h/week",
+        "budget_constraints": {
+          "monthly_budget": 300,
+          "certification_budget": 2000
+        }
+      },
+      "recommendations_count": {
+        "skills": 0,
+        "projects": 0,
+        "certifications": 2,
+        "roadmaps": 0
+      },
+      "confidence": 0.95,
+      "generated_at": "2025-10-17T23:57:12.873798"
+    }
+  ],
+  "statistics": {
+    "total_users": 3,
+    "total_recommendations": 8,
+    "average_confidence": 0.8984836836834846,
+    "type_distribution": {
+      "skills": 2,
+      "projects": 0,
+      "certifications": 6,
+      "roadmaps": 0
+    }
+  },
+  "generated_at": "2025-10-17T23:57:12.876450"
+}
