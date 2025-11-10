@@ -102,7 +102,7 @@ export const interviewService = {
    */
   submitAnswer: async (interviewId: string, data: SubmitAnswerRequest): Promise<SubmitAnswerResponse> => {
     const response = await interviewApi.post<SubmitAnswerResponse>(
-      `/interviews/interviews/${interviewId}/submit_answer`,
+      `/interviews/${interviewId}/submit_answer`,
       data
     );
     return response.data;
@@ -113,7 +113,7 @@ export const interviewService = {
    */
   getReport: async (interviewId: string): Promise<InterviewReportResponse> => {
     const response = await interviewApi.get<InterviewReportResponse>(
-      `/interviews/interviews/${interviewId}/report`
+      `/interviews/${interviewId}/report`
     );
     return response.data;
   },

@@ -56,7 +56,7 @@ async def start_interview(request: StartInterviewRequest) -> StartInterviewRespo
         )
 
 
-@router.post("/interviews/{interview_id}/submit_answer", response_model=SubmitAnswerResponse)
+@router.post("/{interview_id}/submit_answer", response_model=SubmitAnswerResponse)
 async def submit_answer(interview_id: str, request: SubmitAnswerRequest) -> SubmitAnswerResponse:
     """
     Submit an answer to a question
@@ -96,7 +96,7 @@ async def submit_answer(interview_id: str, request: SubmitAnswerRequest) -> Subm
         )
 
 
-@router.get("/interviews/{interview_id}/report", response_model=InterviewReportResponse)
+@router.get("/{interview_id}/report", response_model=InterviewReportResponse)
 async def get_interview_report(interview_id: str) -> InterviewReportResponse:
     """
     Get the complete interview report
