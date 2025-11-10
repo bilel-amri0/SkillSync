@@ -16,6 +16,8 @@ import Recommendations from './pages/Recommendations';
 import XAIExplanations from './pages/XAIExplanations';
 import Analytics from './pages/Analytics';
 import Portfolio from './pages/Portfolio';
+import InterviewPage from './pages/Interview/InterviewPage';
+import InterviewReportPage from './pages/Interview/InterviewReportPage';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 
@@ -85,6 +87,8 @@ function App() {
               <Route path="xai-explanations" element={<XAIExplanations />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="portfolio" element={<Portfolio />} />
+              <Route path="interview" element={<InterviewPage />} />
+              <Route path="interview-report/:interviewId" element={<InterviewReportPage />} />
             </Route>
 
             {/* Fallback */}
