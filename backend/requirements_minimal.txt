@@ -1,0 +1,29 @@
+# SkillSync Phase 1.5 - Minimal Requirements for API Layer
+# Install only what's needed to run the CV analysis and portfolio generation
+
+# Core FastAPI (REQUIRED)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
+
+# CV Processing (REQUIRED for /analyze endpoint)
+PyPDF2==3.0.1
+python-docx==1.1.0
+
+# Portfolio Generation (REQUIRED for /generate-portfolio endpoint)
+jinja2==3.1.2
+
+# Optional: For advanced CV features (OCR, NLP)
+# Uncomment if you want full functionality:
+# pdf2image==1.16.3
+# pytesseract==0.3.10
+# Pillow==10.1.0
+# opencv-python==4.8.1.78
+# spacy==3.7.2
+# sentence-transformers==2.2.2
+# scikit-learn==1.3.2
+# numpy==1.26.2
+
+# After installation, download spaCy model:
+# python -m spacy download en_core_web_lg

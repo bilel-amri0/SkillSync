@@ -39,7 +39,7 @@ class AdzunaJobService:
         self.base_url = "http://api.adzuna.com/v1/api/jobs"
         
         if not self.app_id or not self.app_key:
-            logger.error("⚠️ ADZUNA API credentials not found in environment variables!")
+            logger.error(" ADZUNA API credentials not found in environment variables!")
             logger.error("Please set ADZUNA_APP_ID and ADZUNA_APP_KEY")
     
     async def search_jobs(self, 
@@ -78,7 +78,7 @@ class AdzunaJobService:
                 "content-type": "application/json"
             }
             
-            logger.info(f"🔍 Searching jobs for skills: {skills[:5]}")
+            logger.info(f" Searching jobs for skills: {skills[:5]}")
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(url, params=params)
@@ -87,14 +87,14 @@ class AdzunaJobService:
                 data = response.json()
                 jobs = data.get("results", [])
                 
-                logger.info(f"✅ Found {len(jobs)} jobs from Adzuna API")
+                logger.info(f" Found {len(jobs)} jobs from Adzuna API")
                 return jobs
                 
         except httpx.HTTPError as e:
-            logger.error(f"❌ HTTP error calling Adzuna API: {e}")
+            logger.error(f" HTTP error calling Adzuna API: {e}")
             return []
         except Exception as e:
-            logger.error(f"❌ Unexpected error: {e}")
+            logger.error(f" Unexpected error: {e}")
             return []
     
     def calculate_skill_match_score(self, job_description: str, user_skills: List[str]) -> tuple:
@@ -188,6 +188,6 @@ async def search_matching_jobs(user_skills: List[str],
     # Format and score the results
     job_matches = job_service.format_job_results(raw_jobs, user_skills)
     
-    logger.info(f"🎯 Processed {len(job_matches)} job matches")
+    logger.info(f" Processed {len(job_matches)} job matches")
     
     return job_matches

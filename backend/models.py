@@ -9,17 +9,34 @@ import uuid
 Base = declarative_base()
 
 class User(Base):
-    """User model - Ready for future authentication"""
+    """User model with authentication support"""
     __tablename__ = "users"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    email = Column(String, unique=True, nullable=True)  # Future auth
-    name = Column(String, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
+    name = Column(String, nullable=True)  # Backward compatibility
+    is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     analyses = relationship("CVAnalysis", back_populates="user", cascade="all, delete-orphan")
+
+
+class RefreshToken(Base):
+    """Refresh token model for JWT token refresh"""
+    __tablename__ = "refresh_tokens"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_revoked = Column(Boolean, default=False)
 
 class CVAnalysis(Base):
     """Core CV Analysis model - Current MVP + Option B ready"""

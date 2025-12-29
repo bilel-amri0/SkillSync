@@ -823,9 +823,9 @@ class XAIExplainer:
         explanation = f"""{base_explanation}
 
 Extraction Method: Used {len(method_counts)} different methods to ensure accuracy:
-• Pattern matching: {method_counts.get('pattern_matching', 0)} skills
-• NER extraction: {method_counts.get('ner', 0)} skills
-• Section analysis: {method_counts.get('section_skills', 0)} skills
+ Pattern matching: {method_counts.get('pattern_matching', 0)} skills
+ NER extraction: {method_counts.get('ner', 0)} skills
+ Section analysis: {method_counts.get('section_skills', 0)} skills
 
 Skill Categories: {len(category_counts)} domains identified:
 {self._format_category_breakdown(category_counts)}"""
@@ -848,10 +848,10 @@ Skill Categories: {len(category_counts)} domains identified:
 {shap_explanations}
 
 Calculation Breakdown:
-• Semantic similarity using transformer embeddings: {overall_score:.1%}
-• Experience relevance scoring
-• Skills alignment analysis
-• Education compatibility assessment
+ Semantic similarity using transformer embeddings: {overall_score:.1%}
+ Experience relevance scoring
+ Skills alignment analysis
+ Education compatibility assessment
 
 Why this score? This analysis uses advanced AI to compare your profile against job requirements across multiple dimensions."""
         
@@ -866,9 +866,9 @@ Why this score? This analysis uses advanced AI to compare your profile against j
         explanation = f"""Skill Gap Analysis: {match_percentage:.0f}% alignment with job requirements
 
 Gap Assessment:
-• Critical skills missing: {len(critical_missing)}
-• Overall skill coverage: {match_percentage:.0f}%
-• Development priority: {self._get_priority_level(gap_analysis.get('gap_score', 1.0))}
+ Critical skills missing: {len(critical_missing)}
+ Overall skill coverage: {match_percentage:.0f}%
+ Development priority: {self._get_priority_level(gap_analysis.get('gap_score', 1.0))}
 
 {self._format_skill_list(critical_missing[:3])}"""
         
@@ -899,9 +899,9 @@ Confidence Level: {profile_strength['confidence']:.0f}% (based on data quality a
         explanation_text = f"""Skill Extraction: Identified {len(skills)} skills from your CV using multiple methods.
 
 Extraction Methods Used:
-• Pattern matching for common skill formats
-• Named Entity Recognition for technical terms  
-• Section analysis for structured content
+ Pattern matching for common skill formats
+ Named Entity Recognition for technical terms  
+ Section analysis for structured content
 
 Skill Categories Found:
 {self._format_category_breakdown(defaultdict(int, {s.get('category', 'other'): 1 for s in skills}))}
@@ -928,14 +928,14 @@ Confidence Level: {sum(s.get('confidence', 0.5) for s in skills) / len(skills):.
         explanation_text = f"""Job Matching Analysis: {overall_score:.1%} compatibility score
 
 Matching Method:
-• Semantic embeddings compared CV and job description
-• Cosine similarity calculated between vectors
-• Multi-section analysis for comprehensive assessment
+ Semantic embeddings compared CV and job description
+ Cosine similarity calculated between vectors
+ Multi-section analysis for comprehensive assessment
 
 Score Components:
-• Overall similarity: {overall_score:.1%}
-• Skills alignment: {matching_score.get('section_similarities', {}).get('skills', 0.0):.1%}
-• Experience relevance: {matching_score.get('section_similarities', {}).get('experience', 0.0):.1%}
+ Overall similarity: {overall_score:.1%}
+ Skills alignment: {matching_score.get('section_similarities', {}).get('skills', 0.0):.1%}
+ Experience relevance: {matching_score.get('section_similarities', {}).get('experience', 0.0):.1%}
 
 This score indicates {self._get_score_reasoning(overall_score, 'unknown')}."""
         
@@ -968,9 +968,9 @@ This score indicates {self._get_score_reasoning(overall_score, 'unknown')}."""
         explanation_text = f"""Skill Gap Analysis: {match_percentage:.0f}% alignment
 
 Gap Details:
-• Skills required: {gap_analysis.get('total_job_requirements', 0)}
-• Skills matched: {match_percentage:.0f}%
-• Critical gaps: {len(critical_missing)}
+ Skills required: {gap_analysis.get('total_job_requirements', 0)}
+ Skills matched: {match_percentage:.0f}%
+ Critical gaps: {len(critical_missing)}
 
 Priority Skills to Develop:
 {self._format_skill_list(critical_missing[:3])}
@@ -1087,7 +1087,7 @@ Recommendation: Focus on critical gaps first for maximum impact."""
         lines = []
         for category, count in sorted(category_counts.items(), key=lambda x: x[1], reverse=True):
             category_name = category.replace('_', ' ').title()
-            lines.append(f"• {category_name}: {count} skills")
+            lines.append(f" {category_name}: {count} skills")
         
         return '\n'.join(lines[:5])
     
@@ -1095,16 +1095,16 @@ Recommendation: Focus on critical gaps first for maximum impact."""
         """Format list of skills"""
         
         if not skills:
-            return "• None identified"
+            return " None identified"
         
         lines = []
         for skill in skills[:3]:
             skill_name = skill.get('normalized_name', skill.get('skill', 'Unknown skill'))
             importance = skill.get('importance_score', 0.5)
-            lines.append(f"• {skill_name} (Priority: {importance:.1%})")
+            lines.append(f" {skill_name} (Priority: {importance:.1%})")
         
         if len(skills) > 3:
-            lines.append(f"• ... and {len(skills) - 3} more")
+            lines.append(f" ... and {len(skills) - 3} more")
         
         return '\n'.join(lines)
     
@@ -1112,17 +1112,17 @@ Recommendation: Focus on critical gaps first for maximum impact."""
         """Format strengths"""
         
         if not strengths:
-            return "• Profile analysis in progress"
+            return " Profile analysis in progress"
         
-        return '\n'.join(f"• {strength}" for strength in strengths)
+        return '\n'.join(f" {strength}" for strength in strengths)
     
     def _format_weaknesses(self, weaknesses: List[str]) -> str:
         """Format weaknesses"""
         
         if not weaknesses:
-            return "• No significant gaps identified"
+            return " No significant gaps identified"
         
-        return '\n'.join(f"• {weakness}" for weakness in weaknesses)
+        return '\n'.join(f" {weakness}" for weakness in weaknesses)
     
     def _get_priority_level(self, gap_score: float) -> str:
         """Get priority level"""

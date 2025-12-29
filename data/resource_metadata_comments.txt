@@ -1,0 +1,10 @@
+
+    # Resource Metadata Dataset Comments
+    # - resource_id: Unique identifier for the learning resource.
+    # - skill: The specific skill the resource teaches.
+    # - type: The format of the resource (video, article, exercise).
+    # - duration_hours: Estimated time to complete the resource. Correlated with 'difficulty'.
+    # - cost: Monetary cost of the resource. Correlated with 'difficulty' and 'type'.
+    # - past_success_rate: Historical completion rate for this resource (0-100%). Inversely correlated with 'difficulty'.
+    # - difficulty: Subjective difficulty rating (1-5).
+    

@@ -1,7 +1,12 @@
 """
-🚀 Backend ML Hybride SkillSync
-Utilise les meilleurs outils ML disponibles de façon optimale
+ Backend ML Hybride SkillSync
+Utilise les meilleurs outils ML disponibles de faon optimale
 """
+
+# Suppress TensorFlow warnings
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TF info/warning messages
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN custom operations messages
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -23,86 +28,91 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class HybridMLScorer:
-    """Système de scoring hybride utilisant PyTorch + Scikit-learn + Transformers"""
+    """Systme de scoring hybride utilisant PyTorch + Scikit-learn + Transformers"""
     
     def __init__(self):
         self.ml_available = self._check_ml_availability()
-        logger.info(f"ML Backend initialisé - Disponible: {self.ml_available}")
+        logger.info(f"ML Backend initialis - Disponible: {self.ml_available}")
         
-        # Modèles disponibles
+        # Modles disponibles
         self.models = {}
         self._init_models()
     
     def _check_ml_availability(self):
-        """Vérifie quels modules ML sont disponibles"""
+        """Vrifie quels modules ML sont disponibles"""
         available = {}
         
         try:
             import torch
             available['pytorch'] = True
-            logger.info("✅ PyTorch disponible")
+            logger.info(" PyTorch disponible")
         except:
             available['pytorch'] = False
-            logger.warning("❌ PyTorch non disponible")
+            logger.warning(" PyTorch non disponible")
         
         try:
             from sklearn.ensemble import RandomForestClassifier
             available['sklearn'] = True
-            logger.info("✅ Scikit-learn disponible")
+            logger.info(" Scikit-learn disponible")
         except:
             available['sklearn'] = False
-            logger.warning("❌ Scikit-learn non disponible")
+            logger.warning(" Scikit-learn non disponible")
         
         try:
             from transformers import pipeline
             available['transformers'] = True
-            logger.info("✅ Transformers disponible")
+            logger.info(" Transformers disponible")
         except:
             available['transformers'] = False
-            logger.warning("❌ Transformers non disponible")
+            logger.warning(" Transformers non disponible")
         
         try:
             import tensorflow as tf
-            # Test simple pour vérifier si utilisable
-            tf.constant([1, 2, 3])
-            available['tensorflow_basic'] = True
-            logger.info("✅ TensorFlow (basique) disponible")
-        except:
+            # Test simple pour vrifier si utilisable
+            _ = tf.constant([1, 2, 3])
+            # Vrifier que tf.data existe (bug dans TF < 2.20)
+            if hasattr(tf, 'data'):
+                available['tensorflow_basic'] = True
+                logger.info(f" TensorFlow {tf.__version__} disponible")
+            else:
+                available['tensorflow_basic'] = False
+                logger.warning(" TensorFlow version incompatible (tf.data missing)")
+        except Exception as e:
             available['tensorflow_basic'] = False
-            logger.warning("❌ TensorFlow non utilisable")
+            logger.warning(f" TensorFlow non utilisable: {e}")
         
         return available
     
     def _init_models(self):
-        """Initialise les modèles selon disponibilité"""
+        """Initialise les modles selon disponibilit"""
         
-        # Modèle PyTorch pour scoring neuronal
+        # Modle PyTorch pour scoring neuronal
         if self.ml_available.get('pytorch', False):
             self.models['neural_scorer'] = self._create_pytorch_scorer()
         
-        # Modèle Scikit-learn pour classification
+        # Modle Scikit-learn pour classification
         if self.ml_available.get('sklearn', False):
             self.models['rf_classifier'] = RandomForestClassifier(n_estimators=100, random_state=42)
         
         # Pipeline de sentiment avec Transformers
         if self.ml_available.get('transformers', False):
             try:
-                # Essai avec un modèle plus léger et compatible
+                # Essai avec un modle plus lger et compatible
                 self.models['sentiment'] = pipeline("sentiment-analysis", 
                                                    model="distilbert-base-uncased-finetuned-sst-2-english")
-                logger.info("✅ Modèle sentiment initialisé (DistilBERT)")
+                logger.info(" Modle sentiment initialis (DistilBERT)")
             except Exception as e:
                 try:
-                    # Fallback vers le modèle par défaut
+                    # Fallback vers le modle par dfaut
                     self.models['sentiment'] = pipeline("sentiment-analysis")
-                    logger.info("✅ Modèle sentiment initialisé (par défaut)")
+                    logger.info(" Modle sentiment initialis (par dfaut)")
                 except Exception as e2:
-                    logger.warning(f"⚠️ Modèle sentiment non initialisé (erreur de dépendances)")
-                    logger.info("💡 Solution: pip install --upgrade tensorflow==2.14.0 transformers==4.35.0")
+                    logger.warning(f" Modle sentiment non initialis (erreur de dpendances)")
+                    logger.info(" Solution: pip install --upgrade tensorflow==2.14.0 transformers==4.35.0")
                     self.models['sentiment'] = None
     
     def _create_pytorch_scorer(self):
-        """Crée un modèle PyTorch pour scoring des compétences"""
+        """Cre un modle PyTorch pour scoring des comptences"""
         class SkillScorer(nn.Module):
             def __init__(self, input_dim=10):
                 super(SkillScorer, self).__init__()
@@ -123,19 +133,19 @@ class HybridMLScorer:
                 return self.layers(x)
         
         model = SkillScorer()
-        logger.info("✅ Modèle PyTorch créé")
+        logger.info(" Modle PyTorch cr")
         return model
     
     def score_skill_match(self, job_skills, user_skills):
-        """Score la correspondance compétences avec méthodes hybrides"""
+        """Score la correspondance comptences avec mthodes hybrides"""
         
-        # Méthode 1: TF-IDF + Cosine Similarity (toujours disponible)
+        # Mthode 1: TF-IDF + Cosine Similarity (toujours disponible)
         tfidf_score = self._tfidf_similarity(job_skills, user_skills)
         
-        # Méthode 2: PyTorch Neural Network
+        # Mthode 2: PyTorch Neural Network
         if self.ml_available.get('pytorch', False):
             neural_score = self._neural_score(job_skills, user_skills)
-            # Combinaison pondérée
+            # Combinaison pondre
             final_score = 0.6 * tfidf_score + 0.4 * neural_score
         else:
             final_score = tfidf_score
@@ -143,12 +153,12 @@ class HybridMLScorer:
         return min(max(final_score, 0.0), 1.0)  # Clamp entre 0 et 1
     
     def _tfidf_similarity(self, job_skills, user_skills):
-        """Calcul similarité TF-IDF"""
+        """Calcul similarit TF-IDF"""
         if not job_skills or not user_skills:
             return 0.0
         
         try:
-            # Préparation textes
+            # Prparation textes
             job_text = " ".join(job_skills) if isinstance(job_skills, list) else str(job_skills)
             user_text = " ".join(user_skills) if isinstance(user_skills, list) else str(user_skills)
             
@@ -156,7 +166,7 @@ class HybridMLScorer:
             vectorizer = TfidfVectorizer(lowercase=True, stop_words='english')
             tfidf_matrix = vectorizer.fit_transform([job_text, user_text])
             
-            # Similarité cosinus
+            # Similarit cosinus
             similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
             return similarity
             
@@ -174,7 +184,7 @@ class HybridMLScorer:
             if model is None:
                 return 0.5
             
-            # Prédiction
+            # Prdiction
             model.eval()
             with torch.no_grad():
                 score = model(torch.tensor(features).unsqueeze(0))
@@ -187,7 +197,7 @@ class HybridMLScorer:
     def analyze_job_sentiment(self, job_description):
         """Analyse le sentiment d'une description d'emploi"""
         if not self.models.get('sentiment'):
-            # Fallback: analyse de sentiment basique par mots-clés
+            # Fallback: analyse de sentiment basique par mots-cls
             return self._basic_sentiment_analysis(job_description)
         
         try:
@@ -198,7 +208,7 @@ class HybridMLScorer:
             return self._basic_sentiment_analysis(job_description)
     
     def _basic_sentiment_analysis(self, text):
-        """Analyse de sentiment basique par mots-clés (fallback)"""
+        """Analyse de sentiment basique par mots-cls (fallback)"""
         positive_words = [
             'excellent', 'great', 'good', 'best', 'top', 'leading', 'innovative', 
             'growth', 'opportunity', 'benefits', 'flexible', 'exciting', 'competitive',
@@ -226,7 +236,7 @@ class HybridMLScorer:
         
         for job in jobs_data:
             try:
-                # Score compétences
+                # Score comptences
                 skill_score = self.score_skill_match(
                     job.get('required_skills', []),
                     user_profile.get('skills', [])
@@ -250,12 +260,12 @@ class HybridMLScorer:
             except Exception as e:
                 logger.warning(f"Erreur recommandation job {job.get('id', 'unknown')}: {e}")
         
-        # Tri par score décroissant
+        # Tri par score dcroissant
         recommendations.sort(key=lambda x: x['score'], reverse=True)
         return recommendations[:top_k]
     
     def get_system_status(self):
-        """Retourne le statut du système ML"""
+        """Retourne le statut du systme ML"""
         return {
             'backend_type': 'hybrid',
             'ml_modules': self.ml_available,
@@ -274,6 +284,6 @@ if __name__ == "__main__":
     # Test du backend
     backend = get_ml_backend()
     status = backend.get_system_status()
-    print("🚀 Backend ML Hybride - Status:")
+    print(" Backend ML Hybride - Status:")
     for key, value in status.items():
         print(f"   {key}: {value}")

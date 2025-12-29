@@ -1,5 +1,5 @@
 """
-Simple CV Analyzer - Version sans dépendances ML lourdes
+Simple CV Analyzer - Version sans dpendances ML lourdes
 """
 
 import re
@@ -9,16 +9,16 @@ import PyPDF2
 import io
 
 class SimpleCVAnalyzer:
-    """Analyseur CV simplifié sans ML"""
+    """Analyseur CV simplifi sans ML"""
     
     def __init__(self):
-        # Mots-clés techniques courants
+        # Mots-cls techniques courants
         self.tech_skills = [
             # Langages de programmation
             'python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'php', 'ruby', 'go', 'rust',
             'scala', 'kotlin', 'swift', 'dart', 'r', 'matlab', 'sql', 'html', 'css',
             
-            # Frameworks et bibliothèques
+            # Frameworks et bibliothques
             'react', 'vue', 'angular', 'node.js', 'express', 'django', 'flask', 'spring', 'laravel',
             'tensorflow', 'pytorch', 'keras', 'pandas', 'numpy', 'scikit-learn', 'opencv',
             
@@ -27,7 +27,7 @@ class SimpleCVAnalyzer:
             'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch', 'kafka',
             'linux', 'windows', 'macos', 'bash', 'powershell',
             
-            # Méthodologies
+            # Mthodologies
             'agile', 'scrum', 'devops', 'ci/cd', 'microservices', 'api', 'rest', 'graphql'
         ]
         
@@ -62,12 +62,12 @@ class SimpleCVAnalyzer:
         """Extrait les informations personnelles"""
         info = {}
         
-        # Extraction du nom (souvent en début de CV)
+        # Extraction du nom (souvent en dbut de CV)
         lines = text.split('\n')
-        for line in lines[:5]:  # Cherche dans les 5 premières lignes
+        for line in lines[:5]:  # Cherche dans les 5 premires lignes
             line = line.strip()
             if len(line) > 2 and len(line) < 50 and not '@' in line:
-                # Vérifie si ça ressemble à un nom
+                # Vrifie si a ressemble  un nom
                 if re.match(r'^[A-Za-z\s\-\'\.]+$', line):
                     info['name'] = line
                     break
@@ -78,7 +78,7 @@ class SimpleCVAnalyzer:
         if emails:
             info['email'] = emails[0]
         
-        # Extraction téléphone
+        # Extraction tlphone
         phone_pattern = r'(\+?[0-9\s\-\(\)]{8,15})'
         phones = re.findall(phone_pattern, text)
         for phone in phones:
@@ -90,13 +90,13 @@ class SimpleCVAnalyzer:
         return info
 
     def extract_skills(self, text: str) -> Dict[str, List[str]]:
-        """Extrait les compétences techniques et soft skills"""
+        """Extrait les comptences techniques et soft skills"""
         text_lower = text.lower()
         
         found_tech_skills = []
         found_soft_skills = []
         
-        # Recherche des compétences techniques
+        # Recherche des comptences techniques
         for skill in self.tech_skills:
             if skill.lower() in text_lower:
                 found_tech_skills.append(skill)
@@ -112,13 +112,13 @@ class SimpleCVAnalyzer:
         }
 
     def extract_experience(self, text: str) -> List[Dict[str, str]]:
-        """Extrait l'expérience professionnelle"""
+        """Extrait l'exprience professionnelle"""
         experiences = []
         
-        # Mots-clés pour identifier les sections d'expérience
-        exp_keywords = ['experience', 'work', 'employment', 'career', 'professional', 'expérience']
+        # Mots-cls pour identifier les sections d'exprience
+        exp_keywords = ['experience', 'work', 'employment', 'career', 'professional', 'exprience']
         
-        # Cherche la section expérience
+        # Cherche la section exprience
         lines = text.split('\n')
         in_experience_section = False
         current_exp = None
@@ -126,20 +126,20 @@ class SimpleCVAnalyzer:
         for i, line in enumerate(lines):
             line_lower = line.lower().strip()
             
-            # Détecte le début de la section expérience
+            # Dtecte le dbut de la section exprience
             if any(keyword in line_lower for keyword in exp_keywords):
                 in_experience_section = True
                 continue
             
-            # Détecte une nouvelle section (arrête l'analyse d'expérience)
+            # Dtecte une nouvelle section (arrte l'analyse d'exprience)
             if in_experience_section and line.strip() and line.strip().upper() == line.strip():
                 # Probable nouvelle section en majuscules
-                section_keywords = ['education', 'skills', 'formation', 'compétences', 'projets', 'projects']
+                section_keywords = ['education', 'skills', 'formation', 'comptences', 'projets', 'projects']
                 if any(keyword in line_lower for keyword in section_keywords):
                     break
             
             if in_experience_section and line.strip():
-                # Détection d'une date (années)
+                # Dtection d'une date (annes)
                 date_pattern = r'(20\d{2}|19\d{2})'
                 if re.search(date_pattern, line):
                     if current_exp:
@@ -157,7 +157,7 @@ class SimpleCVAnalyzer:
                     else:
                         current_exp['description'] += line.strip() + ' '
         
-        # Ajoute la dernière expérience
+        # Ajoute la dernire exprience
         if current_exp:
             experiences.append(current_exp)
         
@@ -167,8 +167,8 @@ class SimpleCVAnalyzer:
         """Extrait la formation"""
         education = []
         
-        # Mots-clés pour identifier les sections d'éducation
-        edu_keywords = ['education', 'formation', 'études', 'diplome', 'degree', 'university', 'école']
+        # Mots-cls pour identifier les sections d'ducation
+        edu_keywords = ['education', 'formation', 'tudes', 'diplome', 'degree', 'university', 'cole']
         
         lines = text.split('\n')
         in_education_section = False
@@ -176,13 +176,13 @@ class SimpleCVAnalyzer:
         for line in lines:
             line_lower = line.lower().strip()
             
-            # Détecte le début de la section éducation
+            # Dtecte le dbut de la section ducation
             if any(keyword in line_lower for keyword in edu_keywords):
                 in_education_section = True
                 continue
             
             if in_education_section and line.strip():
-                # Détection d'une date
+                # Dtection d'une date
                 date_pattern = r'(20\d{2}|19\d{2})'
                 if re.search(date_pattern, line):
                     education.append({
@@ -192,14 +192,14 @@ class SimpleCVAnalyzer:
                         'description': ''
                     })
                 
-                # Arrête à la prochaine section
+                # Arrte  la prochaine section
                 if line.strip().upper() == line.strip() and len(line.strip()) > 5:
                     break
         
         return education
 
     def analyze_cv(self, pdf_file) -> Dict[str, Any]:
-        """Analyse complète du CV"""
+        """Analyse complte du CV"""
         try:
             # Extraction du texte
             text = self.extract_text_from_pdf(pdf_file)
@@ -213,7 +213,7 @@ class SimpleCVAnalyzer:
             experience = self.extract_experience(text)
             education = self.extract_education(text)
             
-            # Génération de recommandations basiques
+            # Gnration de recommandations basiques
             recommendations = self._generate_basic_recommendations(skills, experience)
             
             return {
@@ -238,37 +238,37 @@ class SimpleCVAnalyzer:
             return self._get_default_analysis()
 
     def _generate_basic_recommendations(self, skills: Dict, experience: List) -> List[str]:
-        """Génère des recommandations basiques"""
+        """Gnre des recommandations basiques"""
         recommendations = []
         
         tech_skills = skills.get('technical', [])
         exp_count = len(experience)
         
         if len(tech_skills) < 5:
-            recommendations.append("Développer plus de compétences techniques")
+            recommendations.append("Dvelopper plus de comptences techniques")
         
         if exp_count < 2:
-            recommendations.append("Acquérir plus d'expérience professionnelle")
+            recommendations.append("Acqurir plus d'exprience professionnelle")
         
         if 'python' in tech_skills and 'django' not in tech_skills:
-            recommendations.append("Apprendre Django pour le développement web Python")
+            recommendations.append("Apprendre Django pour le dveloppement web Python")
         
         if 'javascript' in tech_skills and 'react' not in tech_skills:
-            recommendations.append("Apprendre React pour le développement frontend")
+            recommendations.append("Apprendre React pour le dveloppement frontend")
         
         recommendations.extend([
-            "Mettre à jour régulièrement ses compétences",
-            "Participer à des projets open source",
-            "Développer son réseau professionnel",
-            "Créer un portfolio en ligne"
+            "Mettre  jour rgulirement ses comptences",
+            "Participer  des projets open source",
+            "Dvelopper son rseau professionnel",
+            "Crer un portfolio en ligne"
         ])
         
-        return recommendations[:4]  # Limite à 4 recommandations
+        return recommendations[:4]  # Limite  4 recommandations
 
     def _get_default_analysis(self) -> Dict[str, Any]:
-        """Retourne une analyse par défaut en cas d'erreur"""
+        """Retourne une analyse par dfaut en cas d'erreur"""
         return {
-            'personal_info': {'name': 'Nom non détecté'},
+            'personal_info': {'name': 'Nom non dtect'},
             'contact_info': {'email': '', 'phone': ''},
             'skills': {'technical': [], 'soft': []},
             'experience': [],
@@ -278,9 +278,9 @@ class SimpleCVAnalyzer:
                 'years_experience': 0,
                 'education_level': 0,
                 'recommendations': [
-                    "Améliorer la structure du CV",
-                    "Ajouter plus de détails sur l'expérience",
-                    "Lister clairement les compétences",
+                    "Amliorer la structure du CV",
+                    "Ajouter plus de dtails sur l'exprience",
+                    "Lister clairement les comptences",
                     "Inclure les informations de contact"
                 ]
             }

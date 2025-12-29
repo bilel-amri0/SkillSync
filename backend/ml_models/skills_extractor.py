@@ -5,41 +5,34 @@ Adapted from notebook for production use
 
 import os
 import numpy as np
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from pathlib import Path
+import re
 import logging
 
 # PyTorch imports with error handling
 try:
     import torch
-    from torch.utils.data import Dataset
     TORCH_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"PyTorch not available: {e}")
     torch = None
-    Dataset = None
     TORCH_AVAILABLE = False
 
 # Transformers imports with error handling
 try:
-    from transformers import (
-        BertTokenizerFast, 
-        BertForTokenClassification,
-        TrainingArguments, 
-        Trainer,
-        pipeline
-    )
+    from transformers import pipeline
     TRANSFORMERS_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Transformers not available: {e}")
-    BertTokenizerFast = None
-    BertForTokenClassification = None
-    TrainingArguments = None
-    Trainer = None
     pipeline = None
     TRANSFORMERS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_RESUME_MODEL_NAME = os.getenv("SKILLSYNC_RESUME_MODEL_NAME", "dslim/bert-base-NER")
+DEFAULT_RESUME_MODEL_PATH = os.getenv("SKILLSYNC_RESUME_MODEL_PATH")
+DEFAULT_SKILL_CONFIDENCE = float(os.getenv("SKILLSYNC_SKILL_CONFIDENCE", "0.58"))
 
 # NER Configuration
 LABEL_NAMES = ["O", "B-SKILL", "I-SKILL"]
@@ -57,209 +50,181 @@ SKILLS_DATABASE = {
     "cloud": ["AWS", "Azure", "GCP", "Lambda", "EC2", "S3", "CloudFormation", "Serverless"]
 }
 
-class NERDataset:
-    """Dataset class for BERT NER training"""
-    
-    def __init__(self, data: List[Dict], tokenizer, max_length: int = 128):
-        if not TORCH_AVAILABLE:
-            raise ImportError("PyTorch is required for NERDataset")
-        
-        self.data = data
-        self.tokenizer = tokenizer
-        self.max_length = max_length
+SAFE_SKILL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+#/\- ]{1,40}$")
 
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        if not TORCH_AVAILABLE:
-            raise ImportError("PyTorch is required for NERDataset")
-            
-        item = self.data[idx]
-        words = item['words'][:self.max_length-2]  # -2 for [CLS] and [SEP]
-        labels = item['labels'][:self.max_length-2]
-
-        # Tokenization with label alignment
-        tokenized = self.tokenizer(
-            words,
-            is_split_into_words=True,
-            padding='max_length',
-            truncation=True,
-            max_length=self.max_length,
-            return_tensors='pt'
-        )
-
-        # Align labels with tokens
-        word_ids = tokenized.word_ids()
-        aligned_labels = []
-        previous_word_idx = None
-
-        for word_idx in word_ids:
-            if word_idx is None:
-                aligned_labels.append(-100)  # Special token
-            elif word_idx != previous_word_idx:
-                if word_idx < len(labels):
-                    aligned_labels.append(labels[word_idx])
-                else:
-                    aligned_labels.append(LABEL2ID["O"])  # 'O' label
-            else:
-                aligned_labels.append(-100)  # Sub-token
-            previous_word_idx = word_idx
-
-        return {
-            'input_ids': tokenized['input_ids'].squeeze(),
-            'attention_mask': tokenized['attention_mask'].squeeze(),
-            'labels': torch.tensor(aligned_labels, dtype=torch.long)
-        }
 
 class SkillsExtractorModel:
-    """
-    Production-ready BERT model for skills extraction
-    """
+    """Production-ready transformer model configured for CV skill extraction."""
     
-    def __init__(self, model_name: str = "bert-base-uncased", model_path: Optional[str] = None):
+    def __init__(
+        self,
+        model_name: Optional[str] = None,
+        model_path: Optional[str] = None,
+        min_confidence: float = DEFAULT_SKILL_CONFIDENCE
+    ):
         self.device = None
         if TORCH_AVAILABLE:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        self.model_name = model_name
-        self.model_path = model_path
+        self.model_name = model_name or DEFAULT_RESUME_MODEL_NAME
+        self.model_path = model_path or DEFAULT_RESUME_MODEL_PATH
+        self.min_confidence = min_confidence
         
-        # Initialize model and tokenizer
         self.tokenizer = None
         self.model = None
         self.pipeline_extractor = None
+        self.known_skill_lookup = self._build_skill_lookup()
+        self.skill_regex = self._build_skill_regex()
         
-        # Initialize if transformers is available
-        if TRANSFORMERS_AVAILABLE and TORCH_AVAILABLE:
+        if TRANSFORMERS_AVAILABLE:
             self._initialize_model()
         else:
-            logger.warning("Transformers/PyTorch not available, falling back to rule-based extraction")
+            logger.warning("Transformers not available, falling back to regex extraction")
             
     def _initialize_model(self):
-        """Initialize BERT model and tokenizer"""
+        """Initialize Hugging Face NER pipeline"""
         try:
-            if self.model_path and Path(self.model_path).exists():
-                logger.info(f"Loading trained model from {self.model_path}")
-                self.tokenizer = BertTokenizerFast.from_pretrained(self.model_path)
-                self.model = BertForTokenClassification.from_pretrained(self.model_path)
-            else:
-                logger.info(f"Loading base model: {self.model_name}")
-                self.tokenizer = BertTokenizerFast.from_pretrained(self.model_name)
-                self.model = BertForTokenClassification.from_pretrained(
-                    self.model_name,
-                    num_labels=len(LABEL_NAMES),
-                    label2id=LABEL2ID,
-                    id2label=ID2LABEL
-                )
-            
-            self.model.to(self.device)
-            logger.info(f"Model loaded successfully on {self.device}")
-            
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
-            self.tokenizer = None
-            self.model = None
-    
-    def extract_skills_bert(self, text: str) -> List[str]:
-        """
-        Extract skills using BERT NER model
-        """
-        if not TORCH_AVAILABLE or self.model is None or self.tokenizer is None:
-            return self.extract_skills_fallback(text)
-            
-        try:
-            # Tokenize
-            inputs = self.tokenizer(
-                text, 
-                return_tensors="pt", 
-                padding=True, 
-                truncation=True, 
-                max_length=128
+            load_target = self.model_path if self.model_path and Path(self.model_path).exists() else self.model_name
+            logger.info("Loading NER pipeline: %s", load_target)
+            device = 0 if TORCH_AVAILABLE and torch.cuda.is_available() else -1
+            self.pipeline_extractor = pipeline(
+                task="ner",
+                model=load_target,
+                tokenizer=load_target,
+                aggregation_strategy="simple",
+                device=device
             )
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-            # Predict
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                predictions = torch.argmax(outputs.logits, dim=2)
-
-            # Extract tokens and labels
-            tokens = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])
-            labels = [ID2LABEL[pred.item()] for pred in predictions[0]]
-
-            # Extract skills
-            skills = []
-            current_skill = []
-
-            for token, label in zip(tokens, labels):
-                if token.startswith('##'):  # Sub-token
-                    continue
-                    
-                if label == 'B-SKILL':
-                    if current_skill:
-                        skills.append(''.join(current_skill).replace('##', ''))
-                    current_skill = [token]
-                elif label == 'I-SKILL' and current_skill:
-                    current_skill.append(token)
-                else:
-                    if current_skill:
-                        skills.append(''.join(current_skill).replace('##', ''))
-                        current_skill = []
-
-            # Clean skills
-            cleaned_skills = []
-            for skill in skills:
-                clean = skill.replace('##', '').strip()
-                if len(clean) > 1 and clean not in ['[CLS]', '[SEP]', '[PAD]']:
-                    cleaned_skills.append(clean)
-                    
-            return list(set(cleaned_skills))  # Remove duplicates
-            
+            logger.info("NER pipeline ready on %s", "cuda" if device == 0 else "cpu")
         except Exception as e:
-            logger.error(f"Error in BERT extraction: {e}")
-            return self.extract_skills_fallback(text)
+            logger.error("Error loading NER pipeline: %s", e)
+            self.pipeline_extractor = None
+    
+    def extract_skills_bert(self, text: str) -> Dict[str, List[Dict[str, Any]]]:
+        """Extract skills using the transformer NER model with per-skill confidence."""
+        if not text.strip():
+            return {"skills": [], "discarded": []}
+        if self.pipeline_extractor is None:
+            fallback = self.extract_skills_fallback(text)
+            return {"skills": [{"skill": skill, "confidence": 0.65} for skill in fallback], "discarded": []}
+
+        try:
+            ner_input = text[:4000]
+            ner_results = self.pipeline_extractor(ner_input)
+            accepted: List[Dict[str, Any]] = []
+            discarded: List[Dict[str, Any]] = []
+
+            for chunk in ner_results:
+                candidate = self._normalize_skill(chunk.get("word"))
+                if not candidate:
+                    continue
+                confidence = float(chunk.get("score") or 0.0)
+                record = {"skill": candidate, "confidence": round(confidence, 4)}
+                if confidence >= self.min_confidence:
+                    accepted.append(record)
+                else:
+                    discarded.append(record)
+
+            deduped = self._dedupe_by_confidence(accepted)
+            if discarded:
+                logger.debug("Discarded %s low-confidence spans", len(discarded))
+
+            return {"skills": deduped, "discarded": discarded}
+
+        except Exception as e:
+            logger.error("Error in NER extraction: %s", e)
+            fallback = self.extract_skills_fallback(text)
+            return {"skills": [{"skill": skill, "confidence": 0.62} for skill in fallback], "discarded": []}
+
+    def _finalize_skill(
+        self,
+        tokens: List[str],
+        confidences: List[float],
+        accepted: List[Dict[str, Any]],
+        discarded: List[Dict[str, Any]]
+    ) -> None:
+        """Normalize collected tokens into a skill span and route by confidence."""
+        if not tokens:
+            return
+        merged = " ".join(tokens).replace(' ##', '').replace('  ', ' ').strip()
+        if not merged or len(merged) <= 1:
+            return
+        confidence = float(np.mean(confidences)) if confidences else 0.5
+        record = {"skill": merged.title(), "confidence": round(confidence, 4)}
+        if confidence >= self.min_confidence:
+            accepted.append(record)
+        else:
+            discarded.append(record)
     
     def extract_skills_fallback(self, text: str) -> List[str]:
-        """
-        Fallback rule-based skills extraction
-        """
-        text_lower = text.lower()
-        found_skills = []
-        
-        # Check all known skills
-        for category, skills in SKILLS_DATABASE.items():
-            for skill in skills:
-                if skill.lower() in text_lower:
-                    found_skills.append(skill)
-        
-        return list(set(found_skills))
+        """Regex-based fallback that safely matches known skills."""
+        if not text or not self.skill_regex:
+            return []
+        matches = set()
+        for match in self.skill_regex.finditer(text.lower()):
+            token = match.group(0).strip()
+            canonical = self.known_skill_lookup.get(token.lower(), token.title())
+            normalized = self._normalize_skill(canonical)
+            if normalized:
+                matches.add(normalized)
+        return sorted(matches)
     
-    def extract_skills(self, text: str, use_bert: bool = True) -> Dict[str, any]:
-        """
-        Main skills extraction method with fallback
-        """
-        if use_bert and self.model is not None:
-            bert_skills = self.extract_skills_bert(text)
+    def extract_skills(self, text: str, use_bert: bool = True) -> Dict[str, Any]:
+        """Main skills extraction method with fallback and confidence calibration."""
+        if use_bert and self.pipeline_extractor is not None:
+            bert_payload = self.extract_skills_bert(text)
+            bert_details = bert_payload.get("skills", [])
+            discarded = bert_payload.get("discarded", [])
             fallback_skills = self.extract_skills_fallback(text)
-            
-            # Combine results
-            all_skills = list(set(bert_skills + fallback_skills))
-            
+
+            skill_map: Dict[str, Dict[str, Any]] = {
+                detail["skill"]: {"confidence": detail["confidence"], "source": "ml"}
+                for detail in bert_details
+            }
+
+            for skill in fallback_skills:
+                title_case = skill.title()
+                if title_case not in skill_map:
+                    skill_map[title_case] = {"confidence": 0.62, "source": "fallback"}
+                else:
+                    skill_map[title_case]["confidence"] = max(0.62, skill_map[title_case]["confidence"])
+
+            skill_details = [
+                {"skill": name, "confidence": round(meta["confidence"], 3), "source": meta["source"]}
+                for name, meta in sorted(skill_map.items(), key=lambda item: item[0].lower())
+            ]
+            avg_conf = np.mean([detail["confidence"] for detail in skill_details]) if skill_details else 0.0
+
             return {
-                "skills": all_skills,
-                "bert_skills": bert_skills,
+                "skills": [detail["skill"] for detail in skill_details],
+                "skill_details": skill_details,
+                "bert_skills": [detail["skill"] for detail in bert_details],
                 "fallback_skills": fallback_skills,
+                "low_confidence_skills": discarded,
                 "method": "bert_with_fallback",
-                "confidence": "high" if len(bert_skills) > 0 else "medium"
+                "confidence": self._label_confidence(avg_conf),
+                "confidence_score": round(float(avg_conf), 3)
             }
-        else:
-            fallback_skills = self.extract_skills_fallback(text)
-            return {
-                "skills": fallback_skills,
-                "method": "rule_based",
-                "confidence": "medium"
-            }
+
+        fallback_skills = self.extract_skills_fallback(text)
+        fallback_details = [
+            {"skill": skill.title(), "confidence": 0.58, "source": "fallback"}
+            for skill in fallback_skills
+        ]
+        return {
+            "skills": [detail["skill"] for detail in fallback_details],
+            "skill_details": fallback_details,
+            "fallback_skills": fallback_skills,
+            "method": "rule_based",
+            "confidence": "medium",
+            "confidence_score": 0.58
+        }
+
+    def _label_confidence(self, score: float) -> str:
+        if score >= 0.82:
+            return "high"
+        if score >= 0.65:
+            return "medium"
+        return "low"
     
     def categorize_skills(self, skills: List[str]) -> Dict[str, List[str]]:
         """
@@ -309,3 +274,42 @@ class SkillsExtractorModel:
                 })
         
         return suggestions[:10]  # Limit to top 10
+
+    def _build_skill_lookup(self) -> Dict[str, str]:
+        lookup: Dict[str, str] = {}
+        for skills in SKILLS_DATABASE.values():
+            for skill in skills:
+                lookup[skill.lower()] = skill
+        return lookup
+
+    def _build_skill_regex(self) -> Optional[re.Pattern]:
+        if not SKILLS_DATABASE:
+            return None
+        unique_skills = sorted({skill.lower() for skills in SKILLS_DATABASE.values() for skill in skills})
+        if not unique_skills:
+            return None
+        pattern = r"\\b(?:" + "|".join(re.escape(skill) for skill in unique_skills) + r")\\b"
+        return re.compile(pattern, re.IGNORECASE)
+
+    def _normalize_skill(self, raw: Optional[str]) -> Optional[str]:
+        if not raw:
+            return None
+        cleaned = raw.replace('##', '').replace('Ġ', ' ').strip()
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        if not cleaned:
+            return None
+        canonical = self.known_skill_lookup.get(cleaned.lower())
+        candidate = canonical or cleaned
+        candidate = candidate.strip().title()
+        if not SAFE_SKILL_PATTERN.match(candidate):
+            return None
+        return candidate
+
+    def _dedupe_by_confidence(self, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        deduped: Dict[str, Dict[str, Any]] = {}
+        for entry in entries:
+            name = entry["skill"]
+            existing = deduped.get(name)
+            if not existing or existing["confidence"] < entry["confidence"]:
+                deduped[name] = entry
+        return list(deduped.values())

@@ -1,0 +1,16 @@
+
+    # Roadmap History Dataset Comments
+    # - roadmap_id: Unique identifier for the learning roadmap instance.
+    # - user_id: Foreign key linking to the User Profiles dataset.
+    # - skills_sequence: The ordered list of skills the user planned to learn in this roadmap. A subset of the user's 'skill_gaps'.
+    # - planned_duration_hours: The sum of estimated resource durations for all skills in the sequence.
+    # - actual_duration_hours: The actual time taken. Influenced by 'planned_duration_hours', resource difficulty, and user's 'weekly_hours_available'. Can be None if the entire roadmap was dropped.
+    # - dropped_skills: List of skills in the sequence that the user did not complete.
+    # - quiz_scores: JSON string mapping skills to final quiz scores (50-100). None if the skill was dropped. Correlated with completion time and difficulty.
+    # - satisfaction_score: User's self-reported satisfaction (1-5). Correlated with completion time and dropped skills.
+    #
+    # ML Use Cases:
+    # - Regression: Predict 'actual_duration_hours' or 'quiz_scores'.
+    # - Classification: Predict probability of 'roadmap completion' (based on dropped_skills being empty).
+    # - Ranking: Rank resources (using Resource Metadata) based on predicted 'past_success_rate' and 'difficulty' for a given user profile.
+    

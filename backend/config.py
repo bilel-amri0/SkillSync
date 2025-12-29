@@ -67,7 +67,7 @@ class Settings:
     
     # Job Matching Settings
     MAX_JOB_RESULTS: int = 20
-    DEFAULT_COUNTRY: str = "fr"  # France par défaut
+    DEFAULT_COUNTRY: str = "fr"  # France par dfaut
     JOB_SEARCH_TIMEOUT: int = 30  # secondes
     
     def __init__(self):

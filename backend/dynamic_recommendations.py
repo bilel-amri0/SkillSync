@@ -1,5 +1,5 @@
 """
-🚀 Advanced Dynamic Recommendation Engine for SkillSync
+ Advanced Dynamic Recommendation Engine for SkillSync
 This module provides intelligent, CV-based personalized skill recommendations.
 """
 
@@ -66,7 +66,7 @@ class DynamicRecommendationEngine:
         """
         Analyze CV content to extract key insights for recommendations
         """
-        logger.info("🔍 Analyzing CV content for personalized recommendations")
+        logger.info(" Analyzing CV content for personalized recommendations")
         
         try:
             # Extract text content from various sources
@@ -82,7 +82,7 @@ class DynamicRecommendationEngine:
                 text_content = cv_data
             
             if not text_content:
-                logger.warning("⚠️ No text content found in CV data")
+                logger.warning(" No text content found in CV data")
                 return self._get_default_analysis()
             
             text_lower = text_content.lower()
@@ -108,12 +108,12 @@ class DynamicRecommendationEngine:
                 "has_technical_content": self._has_technical_content(text_lower)
             }
             
-            logger.info(f"📊 CV Analysis: {experience_level} level, domains: {identified_domains}, skills: {len(current_skills)}")
+            logger.info(f" CV Analysis: {experience_level} level, domains: {identified_domains}, skills: {len(current_skills)}")
             return analysis
             
         except Exception as e:
-            logger.error(f"❌ Error analyzing CV content: {e}")
-            logger.info("🔄 Returning default analysis")
+            logger.error(f" Error analyzing CV content: {e}")
+            logger.info(" Returning default analysis")
             return self._get_default_analysis()
     
     def _determine_experience_level(self, text: str) -> str:
@@ -203,7 +203,7 @@ class DynamicRecommendationEngine:
     
     def generate_skill_recommendations(self, analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate specific skill recommendations based on analysis"""
-        logger.info("🎯 Generating skill recommendations based on analysis")
+        logger.info(" Generating skill recommendations based on analysis")
         
         try:
             recommendations = []
@@ -214,7 +214,7 @@ class DynamicRecommendationEngine:
             # Generate recommendations for each domain
             for domain in primary_domains:
                 if domain not in self.skill_domains:
-                    logger.warning(f"⚠️ Unknown domain: {domain}, skipping")
+                    logger.warning(f" Unknown domain: {domain}, skipping")
                     continue
                     
                 domain_skills = self.skill_domains[domain]["skills"]
@@ -256,11 +256,11 @@ class DynamicRecommendationEngine:
             
             # Limit to top 6 recommendations
             final_recommendations = recommendations[:6]
-            logger.info(f"✅ Successfully generated {len(final_recommendations)} skill recommendations")
+            logger.info(f" Successfully generated {len(final_recommendations)} skill recommendations")
             return final_recommendations
             
         except Exception as e:
-            logger.error(f"❌ Error generating skill recommendations: {e}")
+            logger.error(f" Error generating skill recommendations: {e}")
             # Return basic fallback recommendations
             return [
                 {
@@ -340,14 +340,14 @@ class DynamicRecommendationEngine:
             return recommendations[:2]  # Return max 2 cross-domain recommendations
             
         except Exception as e:
-            logger.error(f"❌ Error generating cross-domain recommendations: {e}")
+            logger.error(f" Error generating cross-domain recommendations: {e}")
             return []  # Return empty list if error occurs
     
     def generate_personalized_recommendations(self, cv_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Main method to generate personalized recommendations
         """
-        logger.info("🎯 Generating personalized recommendations based on CV content")
+        logger.info(" Generating personalized recommendations based on CV content")
         
         # Analyze CV content
         analysis = self.analyze_cv_content(cv_data)
@@ -355,7 +355,7 @@ class DynamicRecommendationEngine:
         # Generate skill recommendations
         recommendations = self.generate_skill_recommendations(analysis)
         
-        logger.info(f"✅ Generated {len(recommendations)} personalized skill recommendations")
+        logger.info(f" Generated {len(recommendations)} personalized skill recommendations")
         return recommendations
 
 # Create global instance

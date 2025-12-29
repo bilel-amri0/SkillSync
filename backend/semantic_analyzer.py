@@ -194,7 +194,7 @@ class SemanticAnalyzer:
         items = []
         
         # Split by common separators
-        separators = [',', '•', '·', '-', '*', '\n']
+        separators = [',', '', '', '-', '*', '\n']
         
         lines = text.split('\n')
         for line in lines:
@@ -203,7 +203,7 @@ class SemanticAnalyzer:
                 continue
             
             # Remove bullet point characters
-            line = re.sub(r'^[•·\-\*]\s*', '', line)
+            line = re.sub(r'^[\-\*]\s*', '', line)
             
             # Split by commas if line contains multiple items
             if ',' in line and len(line.split(',')) > 1:

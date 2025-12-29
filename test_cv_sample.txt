@@ -1,0 +1,35 @@
+John Doe
+Software Engineer
+john.doe@email.com | +1-555-0123 | New York, NY
+
+PROFESSIONAL SUMMARY
+Experienced Full Stack Developer with 5+ years of expertise in building scalable web applications.
+
+SKILLS
+- JavaScript, TypeScript, Python
+- React, Node.js, Express
+- PostgreSQL, MongoDB
+- AWS, Docker, CI/CD
+- Git, Agile/Scrum
+
+WORK EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc. | 2020-Present
+- Developed and maintained multiple React applications serving 100K+ users
+- Implemented RESTful APIs using Node.js and Express
+- Led team of 4 developers in agile environment
+- Reduced application load time by 40% through optimization
+
+Full Stack Developer | StartupXYZ | 2018-2020
+- Built e-commerce platform from scratch using MERN stack
+- Integrated payment gateways and third-party APIs
+- Implemented automated testing with Jest and Cypress
+- Collaborated with UX designers to improve user experience
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology | 2014-2018
+
+CERTIFICATIONS
+- AWS Certified Solutions Architect
+- MongoDB Certified Developer

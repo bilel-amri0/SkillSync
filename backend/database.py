@@ -7,19 +7,37 @@ from typing import List, Dict, Any, Optional
 import json
 from datetime import datetime
 import logging
+import os
 
 from models import Base, User, CVAnalysis, IdentifiedSkill, Recommendation, AnalysisSession
 
-# Configuration
-DATABASE_URL = "sqlite:///./skillsync.db"
+# Import interview tables so Base.metadata is aware of them before create_all
+from skillsync.interviews import models as interview_models  # noqa: F401
+
+# Configuration - Support PostgreSQL or SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./skillsync.db")
 logger = logging.getLogger(__name__)
 
+# Determine if using PostgreSQL or SQLite
+is_postgres = DATABASE_URL.startswith("postgresql://")
+
 # Database setup
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},  # SQLite specific
-    echo=False  # Set True for SQL debugging
-)
+if is_postgres:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        echo=False  # Set True for SQL debugging
+    )
+else:
+    # SQLite configuration
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        echo=False
+    )
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
@@ -61,10 +79,9 @@ class CVAnalysisService:
     ) -> CVAnalysis:
         """Create new CV analysis record"""
         try:
-            # Create or get anonymous user if none provided
+            # Store anonymous analyses without forcing fake users
             if not user_id:
-                user = UserService.get_or_create_anonymous_user(db)
-                user_id = user.id
+                user_id = None
             
             analysis = CVAnalysis(
                 user_id=user_id,
@@ -116,6 +133,27 @@ class CVAnalysisService:
                  .order_by(CVAnalysis.created_at.desc())\
                  .limit(limit)\
                  .all()
+
+    @staticmethod
+    def get_recent_analyses(db: Session, limit: int = 10) -> List[CVAnalysis]:
+        """Return most recent analyses regardless of user."""
+        return (
+            db.query(CVAnalysis)
+            .order_by(CVAnalysis.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    @staticmethod
+    def list_all_analyses(db: Session, limit: int = 100, offset: int = 0) -> List[CVAnalysis]:
+        """List analyses with pagination support."""
+        return (
+            db.query(CVAnalysis)
+            .order_by(CVAnalysis.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
 class UserService:
     """Service class for User operations"""

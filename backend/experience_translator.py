@@ -383,7 +383,7 @@ class ExperienceTranslator:
             score += 0.2
         
         # Structure factor (presence of bullet points or clear sections)
-        if '•' in text or '-' in text or '\n' in text:
+        if '' in text or '-' in text or '\n' in text:
             score += 0.2
         
         # Action verbs factor
@@ -433,7 +433,7 @@ class ExperienceTranslator:
             matches = re.findall(pattern, job_description, re.IGNORECASE | re.DOTALL)
             for match in matches:
                 # Split by common delimiters
-                items = re.split(r'[•\-\n]', match)
+                items = re.split(r'[\-\n]', match)
                 requirements.extend([item.strip() for item in items if item.strip()])
         
         return requirements
@@ -533,7 +533,7 @@ class ExperienceTranslator:
                 # Ensure proper keywords are included
                 final_sentence = self._integrate_keywords(quantified_sentence, alignment)
                 
-                lines.append(f"• {final_sentence}")
+                lines.append(f" {final_sentence}")
             
             rewritten_text = '\n'.join(lines)
             
@@ -606,7 +606,7 @@ class ExperienceTranslator:
             confidence += 0.2
         
         # Score from structure improvement
-        if '•' in rewritten_text and '•' not in experience.original_text:
+        if '' in rewritten_text and '' not in experience.original_text:
             confidence += 0.1
         
         return min(confidence, 1.0)
@@ -637,7 +637,7 @@ class ExperienceTranslator:
                 enhancements.append(f"Added {len(added_keywords)} job-relevant keywords: {', '.join(added_keywords[:3])}")
         
         # Check for structure improvement
-        if '•' in rewritten and '•' not in original:
+        if '' in rewritten and '' not in original:
             enhancements.append("Enhanced readability with bullet-point structure")
         
         # Check for quantification
@@ -703,7 +703,7 @@ class ExperienceTranslator:
 
     def _convert_to_markdown(self, text: str, matches: Dict[str, int]) -> str:
         """Convert to markdown format"""
-        markdown_text = text.replace('•', '-')
+        markdown_text = text.replace('', '-')
         
         # Add keyword highlight section
         if matches:
@@ -715,7 +715,7 @@ class ExperienceTranslator:
 
     def _convert_to_html(self, text: str, matches: Dict[str, int]) -> str:
         """Convert to HTML format"""
-        html_content = text.replace('•', '<li>').replace('\n•', '</li>\n<li>')
+        html_content = text.replace('', '<li>').replace('\n', '</li>\n<li>')
         if '<li>' in html_content:
             html_content = html_content.replace('\n\n', '</li>\n\n<li>')
             html_content += '</li>'

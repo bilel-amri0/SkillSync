@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 from urllib.parse import quote
+import time
 from dotenv import load_dotenv
 load_dotenv()
 # Configure logging
@@ -35,6 +36,8 @@ class MultiJobAPIService:
         self.timeout = int(os.getenv('API_TIMEOUT', 30))
         self.max_jobs_per_source = int(os.getenv('MAX_JOBS_PER_SOURCE', 20))
         self.debug = os.getenv('DEBUG_MODE', 'false').lower() == 'true'
+        self.failure_threshold = int(os.getenv('API_FAILURE_THRESHOLD', 3))
+        self.cooldown_seconds = int(os.getenv('API_COOLDOWN_SECONDS', 300))
         
         # API configurations with priority order
         self.api_configs = {
@@ -85,6 +88,10 @@ class MultiJobAPIService:
                 'enabled': True  # Always enabled (free, no API key required)
             }
         }
+        self.circuit_breakers = {
+            name: {'failures': 0, 'open_until': 0.0}
+            for name in self.api_configs.keys()
+        }
         
         logger.info(f"🚀 MultiJobAPIService initialized with {len([k for k, v in self.api_configs.items() if v['enabled']])} enabled APIs")
     
@@ -98,24 +105,33 @@ class MultiJobAPIService:
         # Create tasks for all enabled APIs
         tasks = []
         enabled_apis = [(name, config) for name, config in self.api_configs.items() if config['enabled']]
+        active_apis: List[tuple[str, Dict[str, Any]]] = []
         
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
             for api_name, config in enabled_apis:
+                if self._is_circuit_open(api_name):
+                    logger.warning(f"⚡ {api_name} circuit open - skipping this round")
+                    continue
                 task = asyncio.create_task(
                     self._search_single_api(session, api_name, query, location, skills),
                     name=f"search_{api_name}"
                 )
                 tasks.append(task)
-            
-            # Wait for all tasks with timeout
+                active_apis.append((api_name, config))
+
+            if not tasks:
+                logger.warning("No job sources available (all circuits open or disabled)")
+                return []
+
             results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Aggregate results
         all_jobs = []
         for i, result in enumerate(results):
-            api_name = enabled_apis[i][0]
+            api_name = active_apis[i][0]
             if isinstance(result, Exception):
                 logger.error(f"❌ {api_name} failed: {result}")
+                self._record_failure(api_name)
             elif isinstance(result, list):
                 all_jobs.extend(result)
                 logger.info(f"✅ {api_name}: {len(result)} jobs")
@@ -151,6 +167,7 @@ class MultiJobAPIService:
                 return []
         except Exception as e:
             logger.error(f"🚨 Error searching {api_name}: {e}")
+            self._record_failure(api_name)
             return []
     
     async def _search_linkedin(self, session: aiohttp.ClientSession, query: str, location: str) -> List[JobResult]:
@@ -212,9 +229,10 @@ class MultiJobAPIService:
                         remote='remote' in job.get('title', '').lower()
                     ))
                 
+                self._reset_circuit('linkedin')
                 return jobs
             else:
-                logger.warning(f"LinkedIn API returned status {response.status}")
+                await self._handle_http_failure('linkedin', response)
                 return []
     
     async def _search_jsearch(self, session: aiohttp.ClientSession, query: str, location: str) -> List[JobResult]:
@@ -283,10 +301,10 @@ class MultiJobAPIService:
                     ))
                 
                 logger.info(f"🎯 JSearch matched {len(jobs)} jobs for query: '{search_query}'")
+                self._reset_circuit('jsearch')
                 return jobs
             else:
-                error_msg = await response.text()
-                logger.warning(f"JSearch API returned status {response.status}: {error_msg}")
+                await self._handle_http_failure('jsearch', response)
                 return []
     
     async def _search_themuse(self, session: aiohttp.ClientSession, query: str, location: str) -> List[JobResult]:
@@ -321,9 +339,10 @@ class MultiJobAPIService:
                         remote='remote' in job.get('name', '').lower()
                     ))
                 
+                self._reset_circuit('themuse')
                 return jobs
             else:
-                logger.warning(f"The Muse API returned status {response.status}")
+                await self._handle_http_failure('themuse', response)
                 return []
     
     async def _search_findwork(self, session: aiohttp.ClientSession, query: str, location: str) -> List[JobResult]:
@@ -362,9 +381,10 @@ class MultiJobAPIService:
                         remote=job.get('remote', False)
                     ))
                 
+                self._reset_circuit('findwork')
                 return jobs
             else:
-                logger.warning(f"FindWork API returned status {response.status}")
+                await self._handle_http_failure('findwork', response)
                 return []
     
     async def _search_adzuna(self, session: aiohttp.ClientSession, query: str, location: str) -> List[JobResult]:
@@ -427,10 +447,10 @@ class MultiJobAPIService:
                     ))
                 
                 logger.info(f"🎯 Adzuna matched {len(jobs)} jobs for query: '{query}'")
+                self._reset_circuit('adzuna')
                 return jobs
             else:
-                error_msg = await response.text()
-                logger.warning(f"Adzuna API returned status {response.status}: {error_msg}")
+                await self._handle_http_failure('adzuna', response)
                 return []
     
     async def _search_arbeitnow(self, session: aiohttp.ClientSession, query: str) -> List[JobResult]:
@@ -471,9 +491,10 @@ class MultiJobAPIService:
                         ))
                 
                 logger.info(f"🎯 Arbeitnow matched {len(jobs)} jobs for query: '{query}'")
+                self._reset_circuit('arbeitnow')
                 return jobs
             else:
-                logger.warning(f"Arbeitnow API returned status {response.status}")
+                await self._handle_http_failure('arbeitnow', response)
                 return []
     
     async def _search_jobicy(self, session: aiohttp.ClientSession, query: str) -> List[JobResult]:
@@ -516,12 +537,14 @@ class MultiJobAPIService:
                             ))
                     
                     logger.info(f"🎯 Jobicy matched {len(jobs)} jobs for query: '{query}'")
+                    self._reset_circuit('jobicy')
                     return jobs
                 except Exception as e:
                     logger.error(f"🚨 Error parsing Jobicy response: {e}")
+                    self._record_failure('jobicy')
                     return []
             else:
-                logger.warning(f"Jobicy API returned status {response.status}")
+                await self._handle_http_failure('jobicy', response)
                 return []
     
     async def _search_remoteok(self, session: aiohttp.ClientSession, query: str) -> List[JobResult]:
@@ -575,13 +598,25 @@ class MultiJobAPIService:
                             ))
                     
                     logger.info(f"🎯 RemoteOK matched {len(jobs)} jobs for query: '{query}'")
+                    self._reset_circuit('remoteok')
                     return jobs
                 except Exception as e:
                     logger.error(f"🚨 Error parsing RemoteOK response: {e}")
+                    self._record_failure('remoteok')
                     return []
             else:
-                logger.warning(f"RemoteOK API returned status {response.status}")
+                await self._handle_http_failure('remoteok', response)
                 return []
+
+    async def _handle_http_failure(self, api_name: str, response: aiohttp.ClientResponse) -> None:
+        status = response.status
+        try:
+            body = await response.text()
+        except Exception:
+            body = ''
+        logger.warning(f"{api_name} API returned status {status}: {body[:200]}")
+        if status in {404, 429}:
+            self._record_failure(api_name, status)
 
     def _deduplicate_jobs(self, jobs: List[JobResult]) -> List[JobResult]:
         """Remove duplicate jobs based on title and company"""
@@ -619,6 +654,35 @@ class MultiJobAPIService:
             }
         
         return status
+
+    def _is_circuit_open(self, api_name: str) -> bool:
+        state = self.circuit_breakers.get(api_name)
+        if not state:
+            return False
+        if state['open_until'] and time.time() < state['open_until']:
+            return True
+        if state['open_until'] and time.time() >= state['open_until']:
+            state['open_until'] = 0.0
+            state['failures'] = 0
+        return False
+
+    def _record_failure(self, api_name: str, status: Optional[int] = None) -> None:
+        state = self.circuit_breakers.setdefault(api_name, {'failures': 0, 'open_until': 0.0})
+        state['failures'] += 1
+        if state['failures'] >= self.failure_threshold:
+            state['open_until'] = time.time() + self.cooldown_seconds
+            logger.warning(
+                f"⚠️ {api_name} circuit opened for {self.cooldown_seconds}s after repeated failures (status={status})"
+            )
+
+    def _reset_circuit(self, api_name: str) -> None:
+        state = self.circuit_breakers.get(api_name)
+        if not state:
+            return
+        if state['failures'] or state['open_until']:
+            logger.info(f"✅ {api_name} circuit reset")
+        state['failures'] = 0
+        state['open_until'] = 0.0
 
 # Singleton instance
 _service_instance = None

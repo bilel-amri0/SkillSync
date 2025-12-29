@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
+import type { CVAnalysisResponse } from './api';
+import { loadLatestAnalysis, saveLatestAnalysis, saveLatestGuidance, clearCareerSnapshots } from './services/careerStore';
+import type { CareerGuidanceResponse } from './types/careerGuidance';
 
 // Layout Components
 import Layout from './components/Layout/Layout';
@@ -9,13 +12,12 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Page Components
 import Dashboard from './pages/Dashboard';
-import CVAnalysis from './pages/CVAnalysis';
+import { CVAnalysisPage } from './pages/CVAnalysisPage';
 import JobMatching from './pages/JobMatching';
-import ExperienceTranslator from './pages/ExperienceTranslator';
-import Recommendations from './pages/Recommendations';
-import XAIExplanations from './pages/XAIExplanations';
-import Analytics from './pages/Analytics';
-import Portfolio from './pages/Portfolio';
+import { MLCareerGuidancePage } from './pages/MLCareerGuidancePage';
+import { NewInterviewPage } from './pages/NewInterviewPage';
+import { LiveInterviewPage } from './pages/LiveInterviewPage';
+import { LiveInterviewPageVoice } from './pages/LiveInterviewPageVoice';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 
@@ -34,14 +36,29 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('authToken') !== null;
   });
+  const [latestCvAnalysis, setLatestCvAnalysis] = useState<CVAnalysisResponse | null>(() => loadLatestAnalysis());
+
+  const handleCvAnalyzed = (analysis: CVAnalysisResponse) => {
+    setLatestCvAnalysis(analysis);
+    saveLatestAnalysis(analysis);
+  };
+
+  const handleGuidanceComplete = (guidance: CareerGuidanceResponse | null) => {
+    if (guidance) {
+      saveLatestGuidance(guidance);
+    }
+  };
 
   const handleLogin = () => {
+    localStorage.setItem('authToken', 'demo-token');
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     setIsAuthenticated(false);
+    setLatestCvAnalysis(null);
+    clearCareerSnapshots();
   };
 
   return (
@@ -78,13 +95,18 @@ function App() {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="cv-analysis" element={<CVAnalysis />} />
+              <Route path="cv-analysis" element={<CVAnalysisPage />} />
               <Route path="job-matching" element={<JobMatching />} />
-              <Route path="experience-translator" element={<ExperienceTranslator />} />
-              <Route path="recommendations" element={<Recommendations />} />
-              <Route path="xai-explanations" element={<XAIExplanations />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="portfolio" element={<Portfolio />} />
+              <Route 
+                path="career-guidance" 
+                element={<MLCareerGuidancePage onCvAnalyzed={handleCvAnalyzed} onGuidanceComplete={handleGuidanceComplete} />} 
+              />
+              <Route 
+                path="interview" 
+                element={<NewInterviewPage cvData={latestCvAnalysis} />} 
+              />
+              <Route path="interview/text/:interviewId" element={<LiveInterviewPage />} />
+              <Route path="interview/voice/:interviewId" element={<LiveInterviewPageVoice />} />
             </Route>
 
             {/* Fallback */}

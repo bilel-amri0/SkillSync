@@ -438,16 +438,16 @@ async def test_complete_system():
         
         # Add formatted output for user
         formatted_output = f"""
-🧪 Test du système de recommandations complet...
+ Test du systme de recommandations complet...
 
-📋 Profil CV analysé:
-   Compétences: {sample_cv['skills']}
-   Expérience: {sample_cv['experience_years']} ans
-   Rôle: {sample_cv['domain']}
+ Profil CV analys:
+   Comptences: {sample_cv['skills']}
+   Exprience: {sample_cv['experience_years']} ans
+   Rle: {sample_cv['domain']}
    Industrie: {sample_cv['industry']}
    Niveau: {sample_cv['level']}
 
-🎯 Recommandations personnalisées:
+ Recommandations personnalises:
 """
         
         # Add top recommendations
@@ -460,23 +460,23 @@ async def test_complete_system():
                 
                 formatted_output += f"""
 {i}. {job['title']} ({job.get('type', 'job')})
-   Score combiné: {scores['combined']:.3f}
-   Similarité: {scores['similarity']:.3f}
+   Score combin: {scores['combined']:.3f}
+   Similarit: {scores['similarity']:.3f}
    Score neural: {scores['neural']:.3f}
    Domaine: {job.get('domain', 'N/A')}
    Explications:
-     • Vos compétences en {', '.join(list(set(sample_cv['skills']).intersection(set(job.get('required_skills', []))))[:2])} correspondent parfaitement"""
+      Vos comptences en {', '.join(list(set(sample_cv['skills']).intersection(set(job.get('required_skills', []))))[:2])} correspondent parfaitement"""
                 
                 # Add experience level info if available
                 if sample_cv.get('level'):
-                    formatted_output += f"\n     • Adapté à votre niveau d'expérience ({sample_cv['level']})"
+                    formatted_output += f"\n      Adapt  votre niveau d'exprience ({sample_cv['level']})"
                 
                 # Add learning opportunities
                 missing_skills = list(set(job.get('required_skills', [])) - set(sample_cv['skills']))[:2]
                 if missing_skills:
-                    formatted_output += f"\n     • Vous apprendrez {', '.join(missing_skills)} pour progresser"
+                    formatted_output += f"\n      Vous apprendrez {', '.join(missing_skills)} pour progresser"
         
-        formatted_output += "\n🎉 Test terminé avec succès !"
+        formatted_output += "\n Test termin avec succs !"
         
         return {
             "success": True,

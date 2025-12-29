@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - SkillSync</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            color: #764ba2;
+            margin-top: 0;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-success {
+            background: #28a745;
+            color: white;
+        }
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 CORS Configuration Test</h1>
+        <p style="text-align: center; color: #666;">
+            Testing CORS configuration for SkillSync Backend (Port 8001) from Frontend (Port 5175)
+        </p>
+
+        <!-- Test 1: Health Check -->
+        <div class="test-section">
+            <h3>Test 1: Health Check (GET) <span class="status-badge" id="test1-status">Not Run</span></h3>
+            <p>Tests simple GET request to verify basic connectivity</p>
+            <button onclick="testHealthCheck()">Run Test</button>
+            <div id="test1-result"></div>
+        </div>
+
+        <!-- Test 2: Analytics Dashboard -->
+        <div class="test-section">
+            <h3>Test 2: Analytics Dashboard (GET) <span class="status-badge" id="test2-status">Not Run</span></h3>
+            <p>Tests GET request to /api/v1/analytics/dashboard</p>
+            <button onclick="testAnalytics()">Run Test</button>
+            <div id="test2-result"></div>
+        </div>
+
+        <!-- Test 3: Career Guidance -->
+        <div class="test-section">
+            <h3>Test 3: Career Guidance (POST) <span class="status-badge" id="test3-status">Not Run</span></h3>
+            <p>Tests POST request with preflight (OPTIONS) to /api/v1/career-guidance</p>
+            <button onclick="testCareerGuidance()">Run Test</button>
+            <div id="test3-result"></div>
+        </div>
+
+        <!-- Test 4: Extract Text -->
+        <div class="test-section">
+            <h3>Test 4: Extract Text (POST) <span class="status-badge" id="test4-status">Not Run</span></h3>
+            <p>Tests POST request to /api/v1/extract-text</p>
+            <button onclick="testExtractText()">Run Test</button>
+            <div id="test4-result"></div>
+        </div>
+
+        <!-- Run All Tests -->
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="runAllTests()" style="font-size: 18px; padding: 15px 40px;">
+                🚀 Run All Tests
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8001';
+
+        function updateStatus(testId, success) {
+            const badge = document.getElementById(`${testId}-status`);
+            badge.textContent = success ? '✅ PASSED' : '❌ FAILED';
+            badge.className = `status-badge ${success ? 'status-success' : 'status-error'}`;
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        function showLoading(elementId) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = '⏳ Testing... Please wait...';
+        }
+
+        async function testHealthCheck() {
+            showLoading('test1-result');
+            try {
+                const response = await fetch(`${BASE_URL}/health`);
+                const data = await response.json();
+                
+                showResult('test1-result', 
+                    `✅ SUCCESS!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}\n\nCORS Headers:\nAccess-Control-Allow-Origin: ${response.headers.get('access-control-allow-origin') || 'Not set'}\nAccess-Control-Allow-Methods: ${response.headers.get('access-control-allow-methods') || 'Not set'}`,
+                    'success'
+                );
+                updateStatus('test1', true);
+            } catch (error) {
+                showResult('test1-result', 
+                    `❌ FAILED!\n\nError: ${error.message}\n\nThis usually means:\n1. Backend is not running on port 8001\n2. CORS is blocking the request\n3. Network connectivity issue`,
+                    'error'
+                );
+                updateStatus('test1', false);
+            }
+        }
+
+        async function testAnalytics() {
+            showLoading('test2-result');
+            try {
+                const response = await fetch(`${BASE_URL}/api/v1/analytics/dashboard`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                showResult('test2-result', 
+                    `✅ SUCCESS!\n\nStatus: ${response.status}\nData received: ${JSON.stringify(data, null, 2).substring(0, 500)}...\n\nCORS working correctly!`,
+                    'success'
+                );
+                updateStatus('test2', true);
+            } catch (error) {
+                showResult('test2-result', 
+                    `❌ FAILED!\n\nError: ${error.message}\n\nPossible causes:\n1. CORS not allowing origin http://localhost:5175\n2. Endpoint not found\n3. Backend error`,
+                    'error'
+                );
+                updateStatus('test2', false);
+            }
+        }
+
+        async function testCareerGuidance() {
+            showLoading('test3-result');
+            try {
+                const response = await fetch(`${BASE_URL}/api/v1/career-guidance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cv_content: 'Senior Software Engineer with 5 years of experience in Python, JavaScript, React, and Node.js. Expert in building scalable web applications.'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                showResult('test3-result', 
+                    `✅ SUCCESS!\n\nStatus: ${response.status}\nJobs found: ${data.job_recommendations?.length || 0}\nCerts found: ${data.certification_recommendations?.length || 0}\nRoadmap phases: ${data.learning_roadmap?.phases?.length || 0}\n\nPreflight (OPTIONS) and POST both working!\nCORS configured correctly!`,
+                    'success'
+                );
+                updateStatus('test3', true);
+            } catch (error) {
+                showResult('test3-result', 
+                    `❌ FAILED!\n\nError: ${error.message}\n\nThis is a preflight request issue:\n1. Browser sends OPTIONS request first\n2. If OPTIONS fails, POST never happens\n3. Check that CORS allows OPTIONS method\n4. Check that CORS allows Content-Type header`,
+                    'error'
+                );
+                updateStatus('test3', false);
+            }
+        }
+
+        async function testExtractText() {
+            showLoading('test4-result');
+            try {
+                // Create a simple text file blob
+                const blob = new Blob(['Test CV content'], { type: 'text/plain' });
+                const formData = new FormData();
+                formData.append('file', blob, 'test.txt');
+
+                const response = await fetch(`${BASE_URL}/api/v1/extract-text`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                showResult('test4-result', 
+                    `✅ SUCCESS!\n\nStatus: ${response.status}\nText extracted: ${data.text?.substring(0, 100) || 'N/A'}\n\nFile upload working!\nCORS configured correctly!`,
+                    'success'
+                );
+                updateStatus('test4', true);
+            } catch (error) {
+                showResult('test4-result', 
+                    `❌ FAILED!\n\nError: ${error.message}\n\nPossible causes:\n1. CORS not allowing multipart/form-data\n2. Endpoint not found\n3. File upload handler issue`,
+                    'error'
+                );
+                updateStatus('test4', false);
+            }
+        }
+
+        async function runAllTests() {
+            console.log('🚀 Running all tests...');
+            await testHealthCheck();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testAnalytics();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCareerGuidance();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testExtractText();
+            
+            console.log('✅ All tests completed');
+        }
+
+        // Auto-run health check on load
+        window.addEventListener('load', () => {
+            console.log('Page loaded. Testing backend connection...');
+            setTimeout(testHealthCheck, 500);
+        });
+    </script>
+</body>
+</html>

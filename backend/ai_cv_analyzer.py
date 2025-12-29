@@ -1,6 +1,6 @@
 """
-Advanced AI CV Analyzer - Intégration avec SkillSync
-Version adaptée pour le système SkillSync existant
+Advanced AI CV Analyzer - Intgration avec SkillSync
+Version adapte pour le systme SkillSync existant
 """
 
 import os
@@ -13,19 +13,37 @@ import PyPDF2
 import io
 import logging
 
+from utils.hf_compat import ensure_hf_cached_download
+
+ensure_hf_cached_download()
+
+# Suppress TensorFlow/Transformers warnings
 warnings.filterwarnings('ignore')
+import os as _os
+_os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logs
+_os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = '1'
+
 logger = logging.getLogger(__name__)
 
 # Fallback imports - use basic functionality if advanced packages not available
 try:
     import numpy as np
     from sklearn.metrics.pairwise import cosine_similarity
-    from sentence_transformers import SentenceTransformer
-    ADVANCED_AI_AVAILABLE = True
-    logger.info("✅ Advanced AI packages available")
-except ImportError:
+    
+    # Try importing sentence_transformers with better error handling
+    try:
+        from sentence_transformers import SentenceTransformer
+        ADVANCED_AI_AVAILABLE = True
+        logger.info(" Advanced AI packages available (NumPy + SentenceTransformer)")
+    except Exception as e:
+        logger.warning(f" SentenceTransformer failed: {str(e)[:100]}")
+        # NumPy and sklearn are available, just not sentence-transformers
+        ADVANCED_AI_AVAILABLE = False
+        SentenceTransformer = None
+        
+except ImportError as e:
     ADVANCED_AI_AVAILABLE = False
-    logger.warning("⚠️ Advanced AI packages not available, using basic extraction")
+    logger.warning(" Advanced AI packages not available, using basic extraction")
     np = None
     cosine_similarity = None
     SentenceTransformer = None
@@ -115,7 +133,7 @@ class CVAnalysis:
 # ==================== ADVANCED AI CV EXTRACTOR ====================
 class AdvancedCVExtractor:
     def __init__(self):
-        logger.info("🧠 Initialisation Advanced CV Extractor...")
+        logger.info(" Initialisation Advanced CV Extractor...")
         self.nlp = None
         self.embedder = None
         
@@ -123,18 +141,18 @@ class AdvancedCVExtractor:
         if SPACY_AVAILABLE:
             try:
                 self.nlp = spacy.load(Config.SPACY_MODEL)
-                logger.info(f"✅ spaCy {Config.SPACY_MODEL} loaded")
+                logger.info(f" spaCy {Config.SPACY_MODEL} loaded")
             except OSError:
-                logger.warning("⚠️ spaCy model not found, using basic extraction")
+                logger.warning(" spaCy model not found, using basic extraction")
                 self.nlp = None
         
         # Initialize embedder if available
         if ADVANCED_AI_AVAILABLE:
             try:
                 self.embedder = SentenceTransformer(Config.EMBEDDING_MODEL)
-                logger.info("✅ Sentence transformer loaded")
+                logger.info(" Sentence transformer loaded")
             except Exception as e:
-                logger.warning(f"⚠️ Could not load embedder: {e}")
+                logger.warning(f" Could not load embedder: {e}")
                 self.embedder = None
     
     def extract_text_from_pdf(self, pdf_file) -> str:
@@ -164,7 +182,16 @@ class AdvancedCVExtractor:
     
     def parse_cv_advanced(self, text: str) -> CVAnalysisData:
         """Advanced CV parsing with AI"""
-        logger.info("🤖 Advanced CV analysis...")
+        logger.info("="*80)
+        logger.info(" STARTING ADVANCED ML CV ANALYSIS")
+        logger.info("="*80)
+        logger.info(f" CV Text Length: {len(text)} characters")
+        logger.info(f" First 300 characters:")
+        logger.info(f"   {text[:300]}")
+        logger.info(f" Last 200 characters:")
+        logger.info(f"   {text[-200:]}")
+        logger.info("-"*80)
+        
         cv_data = CVAnalysisData(raw_text=text)
         
         # Extract basic information
@@ -177,22 +204,98 @@ class AdvancedCVExtractor:
         cv_data.education, cv_data.confidence_scores['education'] = self._extract_education_advanced(text)
         cv_data.languages, cv_data.confidence_scores['languages'] = self._extract_languages(text)
         
+        logger.info("="*80)
+        logger.info(" ML ANALYSIS COMPLETE")
+        logger.info(f"   Name: {cv_data.name}")
+        logger.info(f"   Title: {cv_data.title}")
+        logger.info(f"   Email: {cv_data.email}")
+        logger.info(f"   Skills: {len(cv_data.skills)} found - {', '.join(cv_data.skills[:10])}")
+        logger.info(f"   Experience: {len(cv_data.experience)} entries")
+        logger.info(f"   Education: {len(cv_data.education)} entries")
+        logger.info("="*80)
+        
         return cv_data
     
     def _extract_name(self, text: str) -> Tuple[Optional[str], float]:
-        """Extract name using NLP or pattern matching"""
+        """Extract name with intelligent pattern matching (works without spaCy)"""
+        logger.info(" Extracting name...")
+        
+        # Try spaCy if available
         if self.nlp:
-            doc = self.nlp(text[:1000])
-            persons = [ent.text for ent in doc.ents if ent.label_ == "PER"]
-            if persons:
-                return persons[0], 0.95
+            try:
+                doc = self.nlp(text[:1000])
+                persons = [ent.text for ent in doc.ents if ent.label_ == "PER"]
+                if persons:
+                    logger.info(f"    Name found (spaCy): {persons[0]}")
+                    return persons[0], 0.95
+            except:
+                pass
         
-        # Fallback to pattern matching
+        # Pattern matching approach (works without spaCy)
         lines = [l.strip() for l in text.split('\n') if l.strip()]
-        for line in lines[:5]:
-            if re.match(r'^[A-Z][a-z]+\s[A-Z][a-z]+$', line):
-                return line, 0.75
         
+        # Strategy 1: Look for typical name patterns in first 15 lines
+        name_patterns = [
+            r'^([A-Z][a-z]+(?:\s[A-Z][a-z]+)+)$',  # "John Doe" or "Jean Pierre Martin"
+            r'^([A-Z][A-Z]+\s+[A-Z][a-z]+)$',  # "JOHN Doe"
+            r'^([A-Z][a-z]+\s+[A-Z]+)$',  # "John DOE"
+            r'^([A-Z]+\s+[A-Z]+)$',  # "JOHN DOE"
+            r'^([A-Z]{2,}[A-Z]{2,})$',  # "JOHNDOE" or "RICHARDSANCHEZ" (no space)
+        ]
+        
+        for line in lines[:15]:
+            # Skip lines with common CV keywords
+            line_lower = line.lower()
+            skip_keywords = [
+                'cv', 'resume', 'curriculum', 'vitae', 'tel', 'phone', 'email',
+                'address', 'adresse', 'age', 'date', 'birth', 'n', 'experience',
+                'education', 'skills', 'comptences', 'formation', '@', 'contact',
+                'profile', 'summary', 'objective', 'manager', 'engineer', 'developer'
+            ]
+            
+            if any(keyword in line_lower for keyword in skip_keywords):
+                continue
+            
+            # Skip very short or long lines
+            if len(line) < 4 or len(line) > 50:
+                continue
+            
+            # Try each pattern
+            for pattern in name_patterns:
+                match = re.match(pattern, line)
+                if match:
+                    name = match.group(1)
+                    
+                    # Handle concatenated names like "RICHARDSANCHEZ"
+                    if len(name) > 15 and name.isupper() and ' ' not in name:
+                        # Try to split by capital letters (camelCase-like)
+                        # Find position where second name likely starts (middle of string)
+                        mid = len(name) // 2
+                        for i in range(mid - 2, mid + 3):
+                            if i > 0 and i < len(name):
+                                first = name[:i].capitalize()
+                                last = name[i:].capitalize()
+                                formatted_name = f"{first} {last}"
+                                logger.info(f"    Name found (split): {formatted_name} (from {name})")
+                                return formatted_name, 0.75
+                    
+                    # Additional validation: should have 2-4 words OR be long concatenated name
+                    words = name.split()
+                    if 2 <= len(words) <= 4:
+                        logger.info(f"    Name found (pattern): {name}")
+                        return name, 0.80
+        
+        # Strategy 2: Look for capitalized words in first line
+        first_line = lines[0] if lines else ""
+        if first_line and not any(kw in first_line.lower() for kw in ['cv', 'resume', 'curriculum']):
+            words = first_line.split()
+            cap_words = [w for w in words if w and w[0].isupper() and w.isalpha()]
+            if 2 <= len(cap_words) <= 4:
+                name = ' '.join(cap_words)
+                logger.info(f"    Name found (first line): {name}")
+                return name, 0.70
+        
+        logger.info("    No name found")
         return None, 0.0
     
     def _extract_email(self, text: str) -> Tuple[Optional[str], float]:
@@ -218,100 +321,346 @@ class AdvancedCVExtractor:
         return None, 0.0
     
     def _extract_title(self, text: str) -> Tuple[Optional[str], float]:
-        """Extract professional title"""
+        """Extract professional title with ML-enhanced matching"""
+        logger.info(" Extracting job title...")
+        
+        # Comprehensive title keywords
         title_keywords = [
-            'engineer', 'developer', 'analyst', 'scientist', 'manager', 
-            'consultant', 'specialist', 'ingénieur', 'développeur', 
-            'analyste', 'data scientist', 'étudiant'
+            # English
+            'engineer', 'developer', 'programmer', 'analyst', 'scientist', 'manager', 
+            'consultant', 'specialist', 'architect', 'designer', 'administrator',
+            'lead', 'senior', 'junior', 'staff', 'principal', 'director',
+            'software', 'data', 'full stack', 'backend', 'frontend', 'devops',
+            'machine learning', 'ai', 'web', 'mobile', 'cloud', 'security',
+            # French
+            'ingnieur', 'dveloppeur', 'analyste', 'responsable', 'chef',
+            'consultant', 'architecte', 'concepteur', 'administrateur',
+            'data scientist', 'tudiant', 'stagiaire', 'technicien'
         ]
         
         lines = text.split('\n')
-        for line in lines[:10]:
-            line_lower = line.lower()
-            if any(keyword in line_lower for keyword in title_keywords):
-                return line.strip(), 0.85
+        found_titles = []
         
+        # Search in first 15 lines (after name)
+        for i, line in enumerate(lines[:15]):
+            line_lower = line.lower().strip()
+            
+            # Skip empty lines
+            if not line_lower:
+                continue
+            
+            # Skip lines with contact info
+            if any(skip in line_lower for skip in ['@', 'tel', 'phone', 'email', 'address', '+33', '+1']):
+                continue
+            
+            # Skip very short or very long lines
+            if len(line) < 5 or len(line) > 100:
+                continue
+            
+            # Check if line contains title keyword
+            for keyword in title_keywords:
+                if keyword in line_lower:
+                    # Extract the whole line as title
+                    title = line.strip()
+                    
+                    # Clean up common prefixes
+                    title = re.sub(r'^(poste|position|titre|title):\s*', '', title, flags=re.IGNORECASE)
+                    
+                    found_titles.append((title, 0.90))
+                    logger.info(f"    Title found: {title}")
+                    break
+            
+            # Stop after finding 2 titles
+            if len(found_titles) >= 2:
+                break
+        
+        # Return first found title or None
+        if found_titles:
+            return found_titles[0]
+        
+        logger.info("    No job title found")
         return None, 0.0
     
     def _extract_skills_advanced(self, text: str) -> Tuple[List[str], float]:
-        """Advanced skill extraction using embeddings or pattern matching"""
+        """REAL ML-powered skill extraction with semantic understanding"""
+        
+        # Comprehensive skill database (Technical + Business + Soft Skills)
         tech_skills = [
-            "Python", "Java", "JavaScript", "C++", "C#", "C", "PHP", "Ruby", "Go", "Rust", "Swift", "Kotlin",
-            "HTML", "CSS", "React", "Angular", "Vue", "Node.js", "Express", "Django", "Flask", "Spring",
+            # Programming Languages
+            "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "C", "PHP", "Ruby", "Go", 
+            "Rust", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Perl", "Shell", "Bash",
+            
+            # Web Frontend
+            "HTML", "HTML5", "CSS", "CSS3", "React", "React.js", "Angular", "Vue", "Vue.js", 
+            "Next.js", "Nuxt.js", "Svelte", "jQuery", "Bootstrap", "Tailwind", "Material-UI",
+            "Redux", "Vuex", "Webpack", "Vite", "Sass", "SCSS", "LESS",
+            
+            # Web Backend
+            "Node.js", "Express", "Django", "Flask", "FastAPI", "Spring", "Spring Boot",
+            "Laravel", "Ruby on Rails", "ASP.NET", ".NET", "Symfony", "NestJS",
+            
+            # Databases
             "SQL", "MySQL", "PostgreSQL", "MongoDB", "Redis", "Oracle", "SQLite",
-            "Git", "GitHub", "GitLab", "Docker", "Kubernetes", "Jenkins", "AWS", "Azure", "GCP",
-            "Linux", "Unix", "Windows", "MacOS",
-            "Machine Learning", "Deep Learning", "AI", "NLP", "Computer Vision", "Data Science", "Big Data",
-            "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "MATLAB", "R",
-            "Agile", "Scrum", "DevOps", "CI/CD", "Testing"
+            "Cassandra", "DynamoDB", "Firebase", "Firestore", "MariaDB", "MS SQL Server",
+            "Elasticsearch", "Neo4j", "GraphQL", "NoSQL",
+            
+            # Cloud & DevOps
+            "AWS", "Azure", "GCP", "Google Cloud", "Docker", "Kubernetes", "K8s",
+            "Jenkins", "GitLab CI", "GitHub Actions", "CircleCI", "Travis CI",
+            "Terraform", "Ansible", "Puppet", "Chef", "CloudFormation",
+            
+            # Version Control
+            "Git", "GitHub", "GitLab", "Bitbucket", "SVN", "Mercurial",
+            
+            # AI/ML/Data Science
+            "Machine Learning", "Deep Learning", "AI", "Artificial Intelligence",
+            "NLP", "Natural Language Processing", "Computer Vision", "Data Science",
+            "Big Data", "TensorFlow", "PyTorch", "Keras", "Scikit-learn", "sklearn",
+            "Pandas", "NumPy", "SciPy", "Matplotlib", "Seaborn", "Jupyter",
+            "Spark", "Hadoop", "Kafka", "MLflow", "MLOps",
+            
+            # Mobile
+            "iOS", "Android", "React Native", "Flutter", "Xamarin", "Ionic",
+            
+            # Testing & QA
+            "Testing", "Unit Testing", "Integration Testing", "Jest", "Pytest",
+            "Selenium", "Cypress", "JUnit", "Mocha", "Chai", "TestNG",
+            
+            # Methodologies
+            "Agile", "Scrum", "Kanban", "DevOps", "CI/CD", "TDD", "BDD",
+            "Microservices", "REST API", "RESTful", "SOAP", "gRPC",
+            
+            # Operating Systems
+            "Linux", "Unix", "Windows", "MacOS", "Ubuntu", "CentOS", "Debian",
+            
+            # Blockchain
+            "Blockchain", "Solidity", "Smart Contracts", "Web3", "Crypto",
+            
+            # Business & Management Skills
+            "Project Management", "Product Management", "Program Management",
+            "Team Management", "People Management", "Stakeholder Management",
+            "Budget Management", "Risk Management", "Change Management",
+            "Strategic Planning", "Business Strategy", "Business Development",
+            "Business Analysis", "Process Improvement", "Lean", "Six Sigma",
+            
+            # Marketing & Sales
+            "Digital Marketing", "Content Marketing", "Social Media Marketing",
+            "SEO", "SEM", "Email Marketing", "Marketing Strategy",
+            "Brand Management", "Public Relations", "PR", "Media Relations",
+            "Campaign Management", "Market Research", "Marketing Analytics",
+            "Customer Acquisition", "Lead Generation", "Sales",
+            "CRM", "Salesforce", "HubSpot", "Google Analytics",
+            
+            # Design & Creative
+            "UI Design", "UX Design", "Graphic Design", "Web Design",
+            "Adobe Photoshop", "Illustrator", "Figma", "Sketch",
+            "Adobe XD", "InDesign", "Premiere Pro", "After Effects",
+            
+            # Communication & Soft Skills
+            "Communication", "Leadership", "Teamwork", "Collaboration",
+            "Problem Solving", "Critical Thinking", "Analytical Skills",
+            "Presentation", "Public Speaking", "Negotiation",
+            "Time Management", "Organization", "Attention to Detail",
+            "Adaptability", "Creativity", "Innovation",
+            
+            # Finance & Accounting
+            "Financial Analysis", "Accounting", "Budgeting", "Forecasting",
+            "Excel", "Financial Modeling", "QuickBooks", "SAP",
+            
+            # HR & Recruitment
+            "Recruiting", "Talent Acquisition", "HR Management",
+            "Employee Relations", "Training", "Onboarding"
         ]
         
-        found_skills = []
-        text_upper = text.upper()
+        found_skills = set()  # Use set for automatic deduplication
+        text_lower = text.lower()
         
-        # Basic pattern matching
+        logger.info(f" ML Skill Extraction Started")
+        logger.info(f"   CV Length: {len(text)} characters")
+        logger.info(f"   Preview: {text[:150]}...")
+        
+        # PHASE 1: Exact keyword matching (baseline)
+        logger.info(" Phase 1: Keyword Matching...")
         for skill in tech_skills:
-            if skill.upper() in text_upper:
-                found_skills.append(skill)
+            # Check multiple variations
+            variations = [
+                skill,
+                skill.lower(),
+                skill.replace('.', ''),
+                skill.replace('-', ''),
+                skill.replace(' ', '')
+            ]
+            
+            for var in variations:
+                # Use word boundaries for better matching
+                pattern = r'\b' + re.escape(var) + r'\b'
+                if re.search(pattern, text, re.IGNORECASE):
+                    found_skills.add(skill)
+                    logger.info(f"    Keyword match: {skill}")
+                    break
         
-        # Advanced extraction with embeddings if available
-        if self.embedder and self.nlp:
+        logger.info(f"   Keywords found: {len(found_skills)} skills")
+        
+        # PHASE 2: ML Semantic Matching (only if embedder available)
+        if self.embedder and ADVANCED_AI_AVAILABLE:
             try:
-                doc = self.nlp(text)
-                candidates = [token.text for token in doc if token.pos_ in ["PROPN", "NOUN"] and len(token.text) > 2]
+                logger.info(" Phase 2: ML Semantic Matching...")
+                
+                # Extract potential skill candidates from CV
+                # Strategy: Look for capitalized words, acronyms, technical terms
+                words = re.findall(r'\b[A-Z][a-zA-Z0-9+#.]*\b', text)  # Capitalized words
+                words += re.findall(r'\b[A-Z]{2,}\b', text)  # Acronyms (AWS, API, etc)
+                words += re.findall(r'\b\w+[.#+-]\w+\b', text)  # Tech terms (Node.js, C++, etc)
+                
+                # Clean and deduplicate
+                candidates = []
+                for word in words:
+                    cleaned = word.strip()
+                    if len(cleaned) >= 2 and cleaned not in tech_skills:
+                        candidates.append(cleaned)
+                
+                candidates = list(set(candidates))[:200]  # Limit to 200 for performance
                 
                 if candidates:
-                    candidate_emb = self.embedder.encode(candidates)
-                    tech_emb = self.embedder.encode(tech_skills)
-                    sims = cosine_similarity(candidate_emb, tech_emb)
+                    logger.info(f"   Found {len(candidates)} candidate terms")
+                    logger.info(f"   Candidates: {candidates[:20]}...")  # Show first 20
                     
-                    for i, cand in enumerate(candidates):
-                        max_sim_idx = np.argmax(sims[i])
-                        if sims[i][max_sim_idx] > 0.7:
-                            found_skills.append(tech_skills[max_sim_idx])
+                    # Batch encode for efficiency
+                    import numpy as np
+                    candidate_embeddings = self.embedder.encode(
+                        candidates, 
+                        batch_size=32,
+                        show_progress_bar=False,
+                        convert_to_numpy=True
+                    )
+                    
+                    skill_embeddings = self.embedder.encode(
+                        tech_skills,
+                        batch_size=32, 
+                        show_progress_bar=False,
+                        convert_to_numpy=True
+                    )
+                    
+                    # Calculate cosine similarities
+                    similarities = cosine_similarity(candidate_embeddings, skill_embeddings)
+                    
+                    # Find best matches (threshold: 0.70 = high similarity)
+                    ml_found = 0
+                    for i, candidate in enumerate(candidates):
+                        best_match_idx = np.argmax(similarities[i])
+                        best_similarity = similarities[i][best_match_idx]
+                        
+                        if best_similarity > 0.70:
+                            matched_skill = tech_skills[best_match_idx]
+                            if matched_skill not in found_skills:
+                                found_skills.add(matched_skill)
+                                ml_found += 1
+                                logger.info(f"    ML match: '{candidate}'  {matched_skill} (sim: {best_similarity:.3f})")
+                    
+                    logger.info(f"   ML found {ml_found} additional skills")
+                    
             except Exception as e:
-                logger.warning(f"Advanced skill extraction failed: {e}")
+                logger.error(f"    ML extraction failed: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+        else:
+            logger.warning("    ML embeddings not available, using keywords only")
         
-        return list(set(found_skills)), 0.85 if found_skills else 0.0
+        # Convert to sorted list
+        final_skills = sorted(list(found_skills))
+        confidence = min(0.95, 0.50 + (len(final_skills) * 0.05))  # Higher confidence with more skills
+        
+        logger.info(f" FINAL RESULT: {len(final_skills)} skills extracted")
+        logger.info(f"   Skills: {', '.join(final_skills)}")
+        logger.info(f"   Confidence: {confidence:.2f}")
+        
+        return final_skills, confidence
     
     def _extract_experience_advanced(self, text: str) -> Tuple[List[Dict], float]:
-        """Extract work experience"""
+        """Extract work experience with ML-powered analysis"""
+        logger.info(" Extracting work experience...")
         experiences = []
         
-        # Look for date patterns indicating experience
-        date_pattern = r'\b(19|20)\d{2}\b'
+        # Date patterns
+        year_pattern = r'\b(19|20)\d{2}\b'
+        date_range_pattern = r'(19|20)\d{2}\s*[-]\s*((19|20)\d{2}|present|current|aujourd\'hui|actuellement)'
+        
         lines = text.split('\n')
         
+        # Job title indicators
+        title_keywords = [
+            'developer', 'engineer', 'manager', 'designer', 'architect', 'analyst',
+            'consultant', 'specialist', 'lead', 'senior', 'junior', 'intern',
+            'dveloppeur', 'ingnieur', 'chef', 'responsable', 'analyste', 'consultant',
+            'directeur', 'coordinateur', 'technicien', 'stagiaire'
+        ]
+        
+        # Education keywords to skip
+        education_keywords = [
+            'universit', 'university', 'cole', 'school', 'college', 'master',
+            'bachelor', 'licence', 'diplme', 'degree', 'phd', 'doctorate'
+        ]
+        
+        years_found = []
         for i, line in enumerate(lines):
-            if re.search(date_pattern, line) and len(line.split()) > 2:
-                # Skip education lines
-                if not any(edu_word in line.lower() for edu_word in ['université', 'university', 'école', 'school', 'master', 'bachelor']):
-                    # Extract dates
-                    dates = re.findall(date_pattern, line)
-                    duration = '-'.join(dates) if len(dates) > 1 else dates[0] if dates else 'N/A'
-                    
-                    # Get description from next lines
+            line_lower = line.lower()
+            
+            # Find lines with date ranges (likely job entries)
+            if re.search(date_range_pattern, line, re.IGNORECASE):
+                # Skip if education-related
+                if any(edu_kw in line_lower for edu_kw in education_keywords):
+                    continue
+                
+                # Extract years
+                years = re.findall(year_pattern, line)
+                if years:
+                    years_found.extend(years)
+                
+                # Check if line or nearby lines contain job title
+                context_lines = [line]
+                if i > 0:
+                    context_lines.append(lines[i-1])
+                if i < len(lines) - 1:
+                    context_lines.append(lines[i+1])
+                
+                context_text = ' '.join(context_lines).lower()
+                has_job_keyword = any(keyword in context_text for keyword in title_keywords)
+                
+                if has_job_keyword or len(line.split()) >= 3:
+                    # Extract description from surrounding lines
                     description_lines = []
-                    for j in range(i+1, min(len(lines), i+3)):
-                        if lines[j].strip() and not re.search(date_pattern, lines[j]):
+                    for j in range(i+1, min(len(lines), i+4)):
+                        if lines[j].strip() and not re.search(date_range_pattern, lines[j]):
                             description_lines.append(lines[j].strip())
                     
                     experience = {
                         'title': line.strip(),
-                        'company': 'Entreprise',
-                        'duration': duration,
+                        'company': 'Company',
+                        'duration': '-'.join(years) if len(years) >= 2 else (years[0] if years else 'N/A'),
                         'description': ' '.join(description_lines[:2])
                     }
                     experiences.append(experience)
+                    logger.info(f"    Found experience: {line.strip()[:50]}...")
         
-        return experiences, 0.80 if experiences else 0.0
+        # Calculate total years of experience
+        total_years = 0
+        if years_found:
+            years_int = [int(y) for y in years_found]
+            if len(years_int) >= 2:
+                total_years = max(years_int) - min(years_int)
+                logger.info(f"    Estimated {total_years} years experience (from {min(years_int)} to {max(years_int)})")
+        
+        confidence = 0.85 if experiences else 0.3
+        logger.info(f"   Found {len(experiences)} work experiences")
+        
+        return experiences, confidence
     
     def _extract_education_advanced(self, text: str) -> Tuple[List[Dict], float]:
         """Extract education information"""
         educations = []
         
         # Look for education keywords
-        education_keywords = ['université', 'university', 'école', 'school', 'master', 'bachelor', 'licence', 'diplôme']
+        education_keywords = ['universit', 'university', 'cole', 'school', 'master', 'bachelor', 'licence', 'diplme']
         lines = text.split('\n')
         
         for line in lines:
@@ -334,7 +683,7 @@ class AdvancedCVExtractor:
     def _extract_languages(self, text: str) -> Tuple[List[str], float]:
         """Extract language skills"""
         languages = []
-        common_languages = ['français', 'anglais', 'espagnol', 'allemand', 'italien', 'arabe', 'chinois']
+        common_languages = ['franais', 'anglais', 'espagnol', 'allemand', 'italien', 'arabe', 'chinois']
         
         text_lower = text.lower()
         for lang in common_languages:
@@ -388,8 +737,8 @@ class CVGapAnalyzer:
         ats_score = self._calculate_ats_score(cv_data, job_offer)
         
         # Generate insights
-        strengths = [f"✅ {skill['skill']}" for skill in matched_skills[:3]]
-        weaknesses = [f"⚠️ Missing: {skill['skill']}" for skill in missing_skills[:3]]
+        strengths = [f" {skill['skill']}" for skill in matched_skills[:3]]
+        weaknesses = [f" Missing: {skill['skill']}" for skill in missing_skills[:3]]
         
         recommendations = self._generate_recommendations(cv_data, missing_skills, match_score)
         
@@ -465,19 +814,19 @@ class CVGapAnalyzer:
         
         # Skill recommendations
         for skill in missing_skills[:3]:
-            recommendations.append(f"🎯 Consider learning {skill['skill']} to improve your profile")
+            recommendations.append(f" Consider learning {skill['skill']} to improve your profile")
         
         # Experience recommendations
         if len(cv_data.experience) < 2:
-            recommendations.append("💼 Add more work experience or projects to strengthen your profile")
+            recommendations.append(" Add more work experience or projects to strengthen your profile")
         
         # ATS recommendations
         if match_score < 70:
-            recommendations.append("📄 Optimize your CV with relevant keywords for better ATS scoring")
+            recommendations.append(" Optimize your CV with relevant keywords for better ATS scoring")
         
         # Education recommendations
         if not cv_data.education:
-            recommendations.append("🎓 Consider adding relevant certifications or education details")
+            recommendations.append(" Consider adding relevant certifications or education details")
         
         return recommendations[:4]
 
@@ -488,7 +837,7 @@ class AdvancedCVAnalyzer:
     def __init__(self):
         self.extractor = AdvancedCVExtractor()
         self.analyzer = CVGapAnalyzer()
-        logger.info("🚀 Advanced CV Analyzer initialized")
+        logger.info(" Advanced CV Analyzer initialized")
     
     def analyze_cv_file(self, file_content, filename: str = None) -> Dict:
         """Analyze CV from file content"""
