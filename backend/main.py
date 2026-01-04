@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 # Import routers
 from routers.interview_router import router as interview_router
+from routers.portfolio_router import router as portfolio_router
 
 # Create FastAPI application
 app = FastAPI(
@@ -59,6 +60,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(interview_router)
+app.include_router(portfolio_router)
 
 @app.get("/")
 async def root():
