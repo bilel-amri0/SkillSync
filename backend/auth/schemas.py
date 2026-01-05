@@ -1,20 +1,30 @@
 """Authentication schemas for request/response validation"""
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
+import re
 
 
 class UserCreate(BaseModel):
     """Schema for user registration"""
-    email: EmailStr
+    email: str = Field(..., min_length=5, max_length=255)
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=100)
     full_name: Optional[str] = None
 
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, v):
+            raise ValueError('Invalid email format')
+        return v.lower()
+
 
 class UserLogin(BaseModel):
-    """Schema for user login"""
-    username: str
+    """Schema for user login - accepts email or username"""
+    email: Optional[str] = None
+    username: Optional[str] = None
     password: str
 
 
@@ -23,13 +33,12 @@ class UserResponse(BaseModel):
     id: str
     email: str
     username: str
-    full_name: Optional[str]
+    full_name: Optional[str] = None
     is_active: bool
     is_superuser: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class Token(BaseModel):

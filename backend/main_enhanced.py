@@ -58,6 +58,14 @@ from skillsync.interviews import routes as interview_routes
 from skillsync.interviews import realtime as interview_realtime
 from roadmap_ml.predictor import get_default_predictor
 
+# Import auth router
+try:
+    from auth.router import router as auth_router
+    AUTH_ENABLED = True
+except ImportError:
+    AUTH_ENABLED = False
+    print("⚠️ Authentication module not available")
+
 # Database dependencies
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, DateTime, Boolean, ForeignKey, JSON, func
 from sqlalchemy.ext.declarative import declarative_base
@@ -174,8 +182,14 @@ class Settings:
     allowed_origins = [
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:8080",
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
+        "http://127.0.0.1:8080"
     ]
 
 settings = Settings()
@@ -208,6 +222,11 @@ app.add_middleware(
 app.include_router(cv_analysis.router)
 app.include_router(interview_routes.router)
 app.include_router(interview_realtime.router)
+
+# Include auth router if available
+if AUTH_ENABLED:
+    app.include_router(auth_router)
+    logger.info("✅ Authentication enabled")
 
 # Database setup
 engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
@@ -504,12 +523,57 @@ def _extract_contact_from_raw(raw_text: str) -> Dict[str, str]:
 
 
 def _guess_name_from_text(raw_text: str) -> Optional[str]:
-    for line in _clean_text_lines(raw_text)[:8]:
-        if _looks_like_contact(line) or '|' in line:
+    import re
+    lines = _clean_text_lines(raw_text)[:8]
+    
+    logger.info(f"[_guess_name_from_text] Checking {len(lines)} lines for name")
+    
+    for idx, line in enumerate(lines):
+        logger.info(f"[_guess_name_from_text] Line {idx}: '{line[:100]}'")
+        
+        # Skip lines with pipes
+        if '|' in line:
+            logger.info(f"[_guess_name_from_text] Line {idx} skipped (pipe)")
             continue
-        tokens = line.split()
-        if 2 <= len(tokens) <= 5 and all(token[0].isalpha() for token in tokens if token):
-            return line.title()
+        
+        # Clean the line FIRST - remove emails, URLs, phone numbers
+        cleaned = re.sub(r'\S+@\S+\.\S+', '', line)  # Remove emails
+        cleaned = re.sub(r'github\.com\S*|linkedin\.com\S*', '', cleaned, flags=re.IGNORECASE)  # Remove URLs
+        cleaned = re.sub(r'[\+]?[\d\s\-\(\)]{8,}', '', cleaned)  # Remove phones
+        cleaned = re.sub(r'\b(ariana|tunisia|tunis|profile|student|engineer|developer|at|tek-up|tekup)\b', '', cleaned, flags=re.IGNORECASE)  # Remove common words
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        logger.info(f"[_guess_name_from_text] After cleaning (first 200 chars): '{cleaned[:200]}'")
+        
+        # Extract only the FIRST few words as potential name
+        tokens = cleaned.split()
+        # Take first 2-4 tokens that look like name parts (80%+ letters, 2+ chars)
+        name_tokens = []
+        for token in tokens[:6]:  # Check first 6 tokens max
+            # Stop if we hit a comma or punctuation (end of name)
+            if token in [',', '.', ':', ';', '|']:
+                break
+            # Only accept tokens that are mostly letters
+            if len(token) >= 2 and sum(1 for c in token if c.isalpha()) / len(token) >= 0.8:
+                name_tokens.append(token)
+                # Stop after collecting 2-4 name parts
+                if len(name_tokens) >= 4:
+                    break
+            # Stop if we've seen 2+ valid tokens and hit a non-name word
+            elif len(name_tokens) >= 2:
+                break
+        
+        logger.info(f"[_guess_name_from_text] Extracted name tokens: {name_tokens}")
+        
+        # Validate: should be 2-4 words, reasonable length
+        if 2 <= len(name_tokens) <= 4:
+            name = ' '.join(name_tokens)
+            if 3 <= len(name) <= 50:
+                result = ' '.join(w.title() for w in name_tokens)
+                logger.info(f"[_guess_name_from_text] FOUND NAME: '{result}'")
+                return result
+    
+    logger.info(f"[_guess_name_from_text] No name found, returning None")
     return None
 
 
@@ -812,6 +876,8 @@ def _build_contact_points(analysis: Dict[str, Any], raw_text: str) -> Dict[str, 
 
 
 def _build_portfolio_viewmodel(analysis: Dict[str, Any]) -> Dict[str, Any]:
+    import re
+    
     if isinstance(analysis, BaseModel):
         analysis_data = analysis.model_dump()
     else:
@@ -820,11 +886,40 @@ def _build_portfolio_viewmodel(analysis: Dict[str, Any]) -> Dict[str, Any]:
     raw_text = analysis_data.get('raw_text') or ''
     sections_map = _segment_cv_sections(raw_text)
 
+    # Get the raw name from various sources
     hero_name = (analysis_data.get('personal_info') or {}).get('name')
     if not hero_name or hero_name.strip().lower() in {'professional', 'candidate'}:
         hero_name = _guess_name_from_text(raw_text) or analysis_data.get('name') or 'Professional'
     else:
         hero_name = hero_name.strip()
+    
+    # IMPORTANT: Clean the name even if it came from personal_info
+    # Remove common garbage that might have been stored
+    def clean_extracted_name(name: str) -> str:
+        """Clean name by removing job titles, emails, URLs, etc."""
+        if not name or name.lower() in {'professional', 'candidate', 'engineer', 'developer', 'student'}:
+            # If the stored name is just a job title, try to extract from raw text
+            fresh_name = _guess_name_from_text(raw_text)
+            if fresh_name:
+                return fresh_name
+            return 'Professional'
+        
+        # Clean the name
+        cleaned = re.sub(r'\S+@\S+\.\S+', '', name)  # Remove emails
+        cleaned = re.sub(r'github\.com\S*|linkedin\.com\S*', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'[\+]?[\d\s\-\(\)]{8,}', '', cleaned)  # Remove phones
+        cleaned = re.sub(r'\b(ariana|tunisia|tunis|profile|at|tek-up|tekup)\b', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # If cleaned name is too short or empty, try extracting from raw text
+        if not cleaned or len(cleaned) < 3:
+            fresh_name = _guess_name_from_text(raw_text)
+            if fresh_name:
+                return fresh_name
+        
+        return cleaned.title() if cleaned else 'Professional'
+    
+    hero_name = clean_extracted_name(hero_name)
 
     title_fallback = (
         analysis_data.get('current_title')

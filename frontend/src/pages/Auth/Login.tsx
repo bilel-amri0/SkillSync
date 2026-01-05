@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { authService } from '../../services/authService';
 
 interface LoginProps {
   onLogin: () => void;
@@ -25,11 +26,21 @@ const Login = ({ onLogin }: LoginProps) => {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      onLogin();
-      toast.success('Welcome back to SkillSync!');
+      const result = await authService.login({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (result.success) {
+        toast.success('Welcome back to SkillSync!');
+        onLogin();
+      } else {
+        setError(result.error || 'Invalid email or password');
+        toast.error(result.error || 'Unable to sign in');
+      }
     } catch (submitError) {
       console.error('Failed to process login form', submitError);
+      setError('Unable to sign in right now. Please try again.');
       toast.error('Unable to sign in right now.');
     } finally {
       setIsSubmitting(false);

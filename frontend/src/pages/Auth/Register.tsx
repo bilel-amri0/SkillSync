@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { authService } from '../../services/authService';
 
 interface RegisterProps {
   onRegister: () => void;
@@ -9,6 +10,7 @@ interface RegisterProps {
 
 const Register = ({ onRegister }: RegisterProps) => {
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,8 +19,13 @@ const Register = ({ onRegister }: RegisterProps) => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!name.trim() || !email.trim() || password.trim().length < 6) {
-      setError('Please complete all fields. Password must be at least 6 characters.');
+    if (!name.trim() || !email.trim() || !username.trim() || password.trim().length < 8) {
+      setError('Please complete all fields. Password must be at least 8 characters.');
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      setError('Username must be at least 3 characters.');
       return;
     }
 
@@ -26,11 +33,23 @@ const Register = ({ onRegister }: RegisterProps) => {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      onRegister();
-      toast.success('Account created! Welcome to SkillSync.');
+      const result = await authService.register({
+        email: email.trim(),
+        username: username.trim(),
+        password: password,
+        full_name: name.trim(),
+      });
+
+      if (result.success) {
+        toast.success('Account created! Welcome to SkillSync.');
+        onRegister();
+      } else {
+        setError(result.error || 'Unable to create account');
+        toast.error(result.error || 'Unable to create your account');
+      }
     } catch (submitError) {
       console.error('Failed to process registration form', submitError);
+      setError('Unable to create your account right now. Please try again.');
       toast.error('Unable to create your account right now.');
     } finally {
       setIsSubmitting(false);
@@ -79,6 +98,29 @@ const Register = ({ onRegister }: RegisterProps) => {
             </div>
 
             <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="janedoe"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                disabled={isSubmitting}
+                required
+                minLength={3}
+                maxLength={50}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                3-50 characters, used for your profile
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email address
               </label>
@@ -106,12 +148,16 @@ const Register = ({ onRegister }: RegisterProps) => {
                 type="password"
                 autoComplete="new-password"
                 className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Choose a secure password"
+                placeholder="Choose a secure password (min 8 chars)"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={isSubmitting}
                 required
+                minLength={8}
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Minimum 8 characters
+              </p>
             </div>
           </div>
 

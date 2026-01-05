@@ -43,9 +43,19 @@ async def register(user_data: schemas.UserCreate, db: Session = Depends(get_db))
 
 @router.post("/login", response_model=schemas.Token)
 async def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
-    """Login and get access token"""
-    # Find user
-    user = db.query(User).filter(User.username == credentials.username).first()
+    """Login and get access token - accepts email or username"""
+    # Validate that at least one identifier is provided
+    if not credentials.email and not credentials.username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide email or username"
+        )
+    
+    # Find user by email or username
+    if credentials.email:
+        user = db.query(User).filter(User.email == credentials.email).first()
+    else:
+        user = db.query(User).filter(User.username == credentials.username).first()
     
     if not user or not utils.verify_password(credentials.password, user.hashed_password):
         raise HTTPException(

@@ -13,14 +13,27 @@ import {
   User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getStoredUser } from '../../services/authService';
 
 interface LayoutProps {
   children?: ReactNode;
   onLogout: () => void;
 }
 
+// Get initial user data
+const getInitialUserData = () => {
+  const user = getStoredUser();
+  return {
+    name: user?.full_name || user?.username || 'User',
+    email: user?.email || ''
+  };
+};
+
 const Layout = ({ children, onLogout }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const initialUser = getInitialUserData();
+  const [userName] = useState(initialUser.name);
+  const [userEmail] = useState(initialUser.email);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -192,8 +205,8 @@ const Layout = ({ children, onLogout }: LayoutProps) => {
               <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200 lg:dark:bg-gray-700" aria-hidden="true" />
               <div className="flex items-center">
                 <div className="mr-3 text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Demo User</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Premium Plan</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{userName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{userEmail || 'Premium Plan'}</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
                   <User className="h-5 w-5" />

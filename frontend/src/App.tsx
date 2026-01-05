@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { CVAnalysisResponse } from './api';
 import { loadLatestAnalysis, saveLatestAnalysis, saveLatestGuidance, clearCareerSnapshots } from './services/careerStore';
 import type { CareerGuidanceResponse } from './types/careerGuidance';
+import { authService, isAuthenticated as checkAuth, clearAuthData } from './services/authService';
 
 // Layout Components
 import Layout from './components/Layout/Layout';
@@ -34,9 +35,25 @@ const queryClient = new QueryClient({
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('authToken') !== null;
+    return checkAuth();
   });
   const [latestCvAnalysis, setLatestCvAnalysis] = useState<CVAnalysisResponse | null>(() => loadLatestAnalysis());
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Validate session on mount
+  useEffect(() => {
+    const validateSession = async () => {
+      if (checkAuth()) {
+        const isValid = await authService.validateSession();
+        if (!isValid) {
+          setIsAuthenticated(false);
+          clearAuthData();
+        }
+      }
+      setIsCheckingAuth(false);
+    };
+    validateSession();
+  }, []);
 
   const handleCvAnalyzed = (analysis: CVAnalysisResponse) => {
     setLatestCvAnalysis(analysis);
@@ -50,16 +67,24 @@ function App() {
   };
 
   const handleLogin = () => {
-    localStorage.setItem('authToken', 'demo-token');
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
+  const handleLogout = async () => {
+    await authService.logout();
     setIsAuthenticated(false);
     setLatestCvAnalysis(null);
     clearCareerSnapshots();
   };
+
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
