@@ -1,0 +1,471 @@
+\chapter{Release 2 : Fonctionnalités avancées}
+
+\section*{Introduction}
+Ce chapitre présente la deuxième release de SkillSync qui enrichit la plateforme avec des fonctionnalités avancées. Elle comprend le Sprint 3 dédié à la génération automatique de portfolio et le Sprint 4 consacré à la recherche d'emploi et au matching sémantique.
+
+\section{Sprint 3 : Génération de portfolio}
+
+\subsection{Objectifs du sprint}
+\begin{itemize}
+    \item Développer un générateur de portfolio professionnel automatique
+    \item Proposer 5 templates responsives et personnalisables
+    \item Permettre l'export en package ZIP déployable
+    \item Intégrer les données extraites du CV automatiquement
+\end{itemize}
+
+\subsection{Backlog du Sprint 3}
+\begin{longtable}{|m{1cm}|m{7cm}|m{3cm}|m{2cm}|}
+\hline 
+\textbf{ID} & \textbf{Tâche} & \textbf{Priorité} & \textbf{État} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+T3.1 & Conception des 5 templates HTML/CSS & Haute & Terminé \\
+\hline
+T3.2 & Système de templating Jinja2 & Haute & Terminé \\
+\hline
+T3.3 & Personnalisation des couleurs (5 schemes) & Moyenne & Terminé \\
+\hline
+T3.4 & Génération automatique du contenu & Haute & Terminé \\
+\hline
+T3.5 & Export ZIP avec assets & Haute & Terminé \\
+\hline
+T3.6 & Prévisualisation en temps réel & Moyenne & Terminé \\
+\hline
+T3.7 & Interface de sélection template & Haute & Terminé \\
+\hline
+T3.8 & Intégration responsive (mobile/tablet) & Moyenne & Terminé \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Backlog du Sprint 3}
+\label{tab:sprint3-backlog}
+\end{longtable}
+
+\subsection{Templates disponibles}
+
+\begin{longtable}{|m{3cm}|m{5cm}|m{6cm}|}
+\hline 
+\textbf{Template} & \textbf{Style} & \textbf{Public cible} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Modern & Épuré, animations fluides, dark mode & Développeurs, Tech \\
+\hline
+Classic & Professionnel, sobre, corporate & Finance, Consulting \\
+\hline
+Creative & Coloré, dynamique, artistique & Designers, Marketing \\
+\hline
+Minimal & Ultra-simple, focus contenu & Tous profils \\
+\hline
+Tech & Terminal theme, syntax highlighting & Développeurs senior \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Templates de portfolio disponibles}
+\label{tab:templates}
+\end{longtable}
+
+\subsection{Diagramme de cas d'utilisation - Portfolio}
+
+\begin{verbatim}
+@startuml
+left to right direction
+actor "Candidat" as U
+
+rectangle "Module Portfolio" {
+    usecase "Sélectionner template" as UC1
+    usecase "Personnaliser couleurs" as UC2
+    usecase "Prévisualiser portfolio" as UC3
+    usecase "Modifier sections" as UC4
+    usecase "Générer portfolio" as UC5
+    usecase "Télécharger ZIP" as UC6
+}
+
+U --> UC1
+U --> UC2
+U --> UC3
+U --> UC4
+U --> UC5
+U --> UC6
+
+UC2 .> UC1 : <<extend>>
+UC3 .> UC5 : <<include>>
+UC6 .> UC5 : <<include>>
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Diagramme de cas d'utilisation - Portfolio}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Cas d'utilisation du module portfolio}
+\label{fig:usecase-portfolio}
+\end{figure}
+
+\subsection{Diagramme de séquence - Génération de portfolio}
+
+\begin{verbatim}
+@startuml
+actor Utilisateur
+participant "Frontend" as FE
+participant "Portfolio API" as API
+participant "Template Engine" as TE
+participant "Asset Manager" as AM
+participant "ZIP Generator" as ZIP
+
+Utilisateur -> FE : Sélectionner template + couleurs
+FE -> API : POST /api/v1/portfolio/generate
+API -> API : Récupérer données CV analysé
+API -> TE : render_template(template, data, colors)
+TE -> TE : Générer HTML
+TE -> TE : Générer CSS personnalisé
+TE -> TE : Générer JavaScript
+TE --> API : rendered_files
+API -> AM : collect_assets(fonts, icons)
+AM --> API : assets[]
+API -> ZIP : create_package(files, assets)
+ZIP -> ZIP : Compression
+ZIP --> API : portfolio.zip
+API --> FE : download_url
+FE --> Utilisateur : Télécharger ZIP
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][8cm][c]{0.9\textwidth}{\centering\textbf{Diagramme de séquence - Génération de portfolio}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Séquence de génération de portfolio}
+\label{fig:seq-portfolio}
+\end{figure}
+
+\subsection{Architecture du générateur}
+
+\begin{lstlisting}[language=Python, caption={Classe PortfolioGenerator}]
+class PortfolioGenerator:
+    TEMPLATES = ["modern", "classic", "creative", "minimal", "tech"]
+    COLOR_SCHEMES = ["blue", "green", "purple", "orange", "dark"]
+    
+    def __init__(self, cv_analysis: CVAnalysis):
+        self.cv_data = cv_analysis
+        self.jinja_env = Environment(
+            loader=FileSystemLoader("templates/portfolio")
+        )
+    
+    def generate(
+        self, 
+        template: str, 
+        color_scheme: str
+    ) -> bytes:
+        # Preparation des donnees
+        context = self._prepare_context()
+        
+        # Rendu du template
+        html = self._render_html(template, context)
+        css = self._render_css(template, color_scheme)
+        js = self._render_js(template)
+        
+        # Collection des assets
+        assets = self._collect_assets(template)
+        
+        # Creation du ZIP
+        return self._create_zip(html, css, js, assets)
+    
+    def _prepare_context(self) -> dict:
+        return {
+            "name": self.cv_data.full_name,
+            "title": self.cv_data.current_title,
+            "about": self.cv_data.summary,
+            "experience": self.cv_data.experiences,
+            "education": self.cv_data.education,
+            "skills": self.cv_data.skills,
+            "contact": self.cv_data.contact_info
+        }
+\end{lstlisting}
+
+\subsection{Structure du package généré}
+\begin{verbatim}
+portfolio.zip/
+├── index.html          # Page principale
+├── css/
+│   ├── style.css       # Styles personnalisés
+│   └── tailwind.min.css
+├── js/
+│   ├── main.js         # Scripts interactifs
+│   └── alpine.min.js
+├── assets/
+│   ├── fonts/          # Polices web
+│   └── icons/          # Icônes SVG
+└── README.md           # Instructions déploiement
+\end{verbatim}
+
+\subsection{Interfaces utilisateur}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Interface de sélection de template}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_portfolio\_select.png}}
+\caption{Sélection du template de portfolio}
+\label{fig:ui-portfolio-select}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Prévisualisation du portfolio}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_portfolio\_preview.png}}
+\caption{Prévisualisation du portfolio généré}
+\label{fig:ui-portfolio-preview}
+\end{figure}
+
+\section{Sprint 4 : Recherche d'emploi et matching}
+
+\subsection{Objectifs du sprint}
+\begin{itemize}
+    \item Intégrer plusieurs APIs de recherche d'emploi (Adzuna, The Muse, RemoteOK)
+    \item Développer un système de matching sémantique CV-offre
+    \item Implémenter des filtres avancés (lieu, salaire, remote)
+    \item Fournir des scores de compatibilité explicables
+\end{itemize}
+
+\subsection{Backlog du Sprint 4}
+\begin{longtable}{|m{1cm}|m{7cm}|m{3cm}|m{2cm}|}
+\hline 
+\textbf{ID} & \textbf{Tâche} & \textbf{Priorité} & \textbf{État} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+T4.1 & Intégration API Adzuna & Haute & Terminé \\
+\hline
+T4.2 & Intégration API The Muse & Haute & Terminé \\
+\hline
+T4.3 & Intégration API RemoteOK & Moyenne & Terminé \\
+\hline
+T4.4 & Système de filtrage unifié & Haute & Terminé \\
+\hline
+T4.5 & Embeddings avec Sentence-Transformers & Haute & Terminé \\
+\hline
+T4.6 & Calcul similarité cosine CV-offre & Haute & Terminé \\
+\hline
+T4.7 & Génération explications matching & Moyenne & Terminé \\
+\hline
+T4.8 & Interface de recherche & Haute & Terminé \\
+\hline
+T4.9 & Sauvegarde offres favorites & Moyenne & Terminé \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Backlog du Sprint 4}
+\label{tab:sprint4-backlog}
+\end{longtable}
+
+\subsection{Diagramme de cas d'utilisation - Recherche emploi}
+
+\begin{verbatim}
+@startuml
+left to right direction
+actor "Candidat" as U
+
+rectangle "Module Recherche Emploi" {
+    usecase "Rechercher offres" as UC1
+    usecase "Filtrer résultats" as UC2
+    usecase "Voir détails offre" as UC3
+    usecase "Calculer matching" as UC4
+    usecase "Voir explications" as UC5
+    usecase "Sauvegarder offre" as UC6
+    usecase "Consulter favoris" as UC7
+}
+
+U --> UC1
+U --> UC2
+U --> UC3
+U --> UC4
+U --> UC5
+U --> UC6
+U --> UC7
+
+UC2 .> UC1 : <<extend>>
+UC4 .> UC3 : <<include>>
+UC5 .> UC4 : <<include>>
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Diagramme de cas d'utilisation - Recherche emploi}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Cas d'utilisation du module recherche emploi}
+\label{fig:usecase-job}
+\end{figure}
+
+\subsection{Architecture du matching sémantique}
+
+Le système de matching utilise des embeddings vectoriels pour comparer sémantiquement le CV avec les descriptions de poste :
+
+\begin{lstlisting}[language=Python, caption={Matching sémantique avec Sentence-Transformers}]
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+class SemanticMatcher:
+    def __init__(self):
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    def calculate_match(
+        self, 
+        cv_text: str, 
+        job_description: str
+    ) -> MatchResult:
+        # Generation des embeddings (768 dimensions)
+        cv_embedding = self.model.encode([cv_text])
+        job_embedding = self.model.encode([job_description])
+        
+        # Calcul similarite cosine
+        similarity = cosine_similarity(
+            cv_embedding, 
+            job_embedding
+        )[0][0]
+        
+        # Score sur 100
+        score = round(similarity * 100, 2)
+        
+        # Analyse detaillee
+        skill_match = self._analyze_skills(cv_text, job_description)
+        experience_match = self._analyze_experience(cv_text, job_description)
+        
+        return MatchResult(
+            overall_score=score,
+            skill_score=skill_match.score,
+            experience_score=experience_match.score,
+            matched_skills=skill_match.matched,
+            missing_skills=skill_match.missing,
+            explanation=self._generate_explanation(...)
+        )
+    
+    def _generate_explanation(self, match_data: dict) -> str:
+        """Genere une explication comprehensible du score"""
+        if match_data["overall_score"] >= 80:
+            level = "excellent"
+        elif match_data["overall_score"] >= 60:
+            level = "bon"
+        elif match_data["overall_score"] >= 40:
+            level = "moyen"
+        else:
+            level = "faible"
+        
+        return f"""
+        Votre profil presente une compatibilite {level} ({match_data['overall_score']}%).
+        
+        Points forts:
+        - {len(match_data['matched_skills'])} competences correspondantes
+        
+        Axes d'amelioration:
+        - {len(match_data['missing_skills'])} competences a developper
+        """
+\end{lstlisting}
+
+\subsection{Diagramme de séquence - Matching CV-Offre}
+
+\begin{verbatim}
+@startuml
+actor Utilisateur
+participant "Frontend" as FE
+participant "Job Search API" as API
+participant "External APIs" as EXT
+participant "Semantic Matcher" as SM
+participant "Sentence-Transformers" as ST
+
+Utilisateur -> FE : Rechercher "Python Developer Paris"
+FE -> API : GET /api/v1/jobs/search?q=...
+API -> EXT : Adzuna API
+API -> EXT : The Muse API
+API -> EXT : RemoteOK API
+EXT --> API : jobs[]
+API -> API : Fusionner et dédupliquer
+Utilisateur -> FE : Voir matching pour offre X
+FE -> API : POST /api/v1/jobs/match
+API -> SM : calculate_match(cv, job)
+SM -> ST : encode(cv_text)
+ST --> SM : cv_embedding[768]
+SM -> ST : encode(job_description)
+ST --> SM : job_embedding[768]
+SM -> SM : cosine_similarity()
+SM -> SM : analyze_skills()
+SM -> SM : generate_explanation()
+SM --> API : MatchResult
+API --> FE : {score, explanation, details}
+FE --> Utilisateur : Afficher résultat
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][9cm][c]{0.9\textwidth}{\centering\textbf{Diagramme de séquence - Matching CV-Offre}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Séquence de matching sémantique}
+\label{fig:seq-matching}
+\end{figure}
+
+\subsection{Interfaces utilisateur}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Interface de recherche d'emploi}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_job\_search.png}}
+\caption{Interface de recherche d'emploi}
+\label{fig:ui-job-search}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Résultat du matching avec explications}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_job\_matching.png}}
+\caption{Affichage du score de matching avec explications}
+\label{fig:ui-job-matching}
+\end{figure}
+
+\section{Tests et validation}
+
+\subsection{Tests unitaires Release 2}
+\begin{longtable}{|m{4cm}|m{6cm}|m{3cm}|}
+\hline 
+\textbf{Test} & \textbf{Description} & \textbf{Résultat} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+test\_template\_render & Rendu des 5 templates & Pass \\
+\hline
+test\_color\_schemes & Application des 5 color schemes & Pass \\
+\hline
+test\_zip\_generation & Génération du package ZIP & Pass \\
+\hline
+test\_portfolio\_content & Contenu généré depuis CV & Pass \\
+\hline
+test\_adzuna\_api & Intégration API Adzuna & Pass \\
+\hline
+test\_muse\_api & Intégration API The Muse & Pass \\
+\hline
+test\_remoteok\_api & Intégration API RemoteOK & Pass \\
+\hline
+test\_embedding\_gen & Génération embeddings & Pass \\
+\hline
+test\_cosine\_sim & Calcul similarité cosine & Pass \\
+\hline
+test\_match\_explanation & Génération explications & Pass \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Résultats des tests unitaires - Release 2}
+\label{tab:tests-r2}
+\end{longtable}
+
+\section*{Conclusion}
+La Release 2 a enrichi SkillSync avec un générateur de portfolio automatique offrant 5 templates personnalisables et un système de recherche d'emploi multi-sources avec matching sémantique explicable. Le chapitre suivant présentera la Release 3 dédiée au module de guidance de carrière et aux recommandations IA.

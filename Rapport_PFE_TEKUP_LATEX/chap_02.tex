@@ -1,0 +1,483 @@
+\chapter{Analyse et spécification des besoins}
+
+\section*{Introduction}
+Dans ce chapitre, nous présentons une analyse détaillée des besoins fonctionnels et non fonctionnels de la plateforme SkillSync. Nous identifions les différents acteurs du système, détaillons les cas d'utilisation, présentons le diagramme de classes global et établissons la planification du travail.
+
+\section{Spécification des besoins}
+
+\subsection{Identification des acteurs}
+La plateforme SkillSync implique les acteurs suivants :
+
+\begin{itemize}
+    \item \textbf{Visiteur} : Utilisateur non authentifié qui peut consulter la page d'accueil et s'inscrire.
+    \item \textbf{Candidat (Utilisateur authentifié)} : Utilisateur principal qui peut :
+    \begin{itemize}
+        \item Télécharger et analyser son CV
+        \item Générer un portfolio professionnel
+        \item Rechercher des offres d'emploi
+        \item Consulter ses recommandations de carrière
+        \item Gérer son profil et ses analyses sauvegardées
+    \end{itemize}
+    \item \textbf{Administrateur} : Utilisateur avec des privilèges étendus pour :
+    \begin{itemize}
+        \item Gérer les utilisateurs
+        \item Configurer les paramètres système
+        \item Consulter les statistiques d'utilisation
+    \end{itemize}
+\end{itemize}
+
+\subsection{Spécification des besoins fonctionnels}
+Les besoins fonctionnels sont regroupés par module :
+
+\subsubsection{Module Authentification (BF1)}
+\begin{itemize}
+    \item BF1.1 : Inscription avec email et mot de passe
+    \item BF1.2 : Connexion sécurisée avec JWT
+    \item BF1.3 : Déconnexion et révocation du token
+    \item BF1.4 : Rafraîchissement automatique du token
+    \item BF1.5 : Réinitialisation du mot de passe
+\end{itemize}
+
+\subsubsection{Module Analyse de CV (BF2)}
+\begin{itemize}
+    \item BF2.1 : Upload de CV (PDF, DOCX, TXT)
+    \item BF2.2 : Extraction automatique du texte avec OCR
+    \item BF2.3 : Reconnaissance d'entités nommées (NER) pour les compétences
+    \item BF2.4 : Catégorisation des compétences (techniques, soft skills, outils)
+    \item BF2.5 : Calcul du score ATS avec détail des critères
+    \item BF2.6 : Analyse des gaps de compétences
+    \item BF2.7 : Génération de recommandations d'amélioration
+\end{itemize}
+
+\subsubsection{Module Portfolio (BF3)}
+\begin{itemize}
+    \item BF3.1 : Sélection du template (5 thèmes disponibles)
+    \item BF3.2 : Personnalisation des couleurs
+    \item BF3.3 : Génération automatique du contenu depuis le CV
+    \item BF3.4 : Prévisualisation en temps réel
+    \item BF3.5 : Export ZIP avec tous les fichiers
+\end{itemize}
+
+\subsubsection{Module Recherche d'emploi (BF4)}
+\begin{itemize}
+    \item BF4.1 : Recherche multi-sources (Adzuna, The Muse, RemoteOK)
+    \item BF4.2 : Filtrage par localisation, salaire, type de contrat
+    \item BF4.3 : Matching sémantique CV-offre
+    \item BF4.4 : Score de compatibilité avec justifications
+    \item BF4.5 : Sauvegarde des offres favorites
+\end{itemize}
+
+\subsubsection{Module Guidance de carrière (BF5)}
+\begin{itemize}
+    \item BF5.1 : Analyse du profil de carrière
+    \item BF5.2 : Recommandations de formations personnalisées
+    \item BF5.3 : Suggestions de certifications pertinentes
+    \item BF5.4 : Parcours d'évolution suggérés
+    \item BF5.5 : Estimation du temps d'acquisition des compétences
+\end{itemize}
+
+\subsection{Diagramme de cas d'utilisation global}
+La figure \ref{fig:usecase-global} présente le diagramme de cas d'utilisation global de SkillSync.
+
+% Code PlantUML pour le diagramme de cas d'utilisation
+% À générer avec PlantUML ou StarUML
+
+\begin{verbatim}
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Visiteur" as V
+actor "Candidat" as C
+actor "Administrateur" as A
+
+rectangle "SkillSync" {
+    usecase "S'inscrire" as UC1
+    usecase "Se connecter" as UC2
+    usecase "Se déconnecter" as UC3
+    usecase "Télécharger CV" as UC4
+    usecase "Analyser CV" as UC5
+    usecase "Voir analyse détaillée" as UC6
+    usecase "Générer portfolio" as UC7
+    usecase "Personnaliser portfolio" as UC8
+    usecase "Télécharger portfolio" as UC9
+    usecase "Rechercher emplois" as UC10
+    usecase "Voir matching score" as UC11
+    usecase "Sauvegarder offre" as UC12
+    usecase "Consulter guidance carrière" as UC13
+    usecase "Voir recommandations" as UC14
+    usecase "Gérer profil" as UC15
+    usecase "Gérer utilisateurs" as UC16
+    usecase "Voir statistiques" as UC17
+}
+
+V --> UC1
+V --> UC2
+
+C --> UC2
+C --> UC3
+C --> UC4
+C --> UC5
+C --> UC6
+C --> UC7
+C --> UC8
+C --> UC9
+C --> UC10
+C --> UC11
+C --> UC12
+C --> UC13
+C --> UC14
+C --> UC15
+
+A --> UC16
+A --> UC17
+
+UC5 .> UC4 : <<include>>
+UC6 .> UC5 : <<include>>
+UC8 .> UC7 : <<extend>>
+UC11 .> UC10 : <<include>>
+@enduml
+\end{verbatim}
+
+% Placeholder pour l'image
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][8cm][c]{0.9\textwidth}{\centering\textbf{Diagramme de cas d'utilisation global}\\[5mm]
+\small Générer avec le code PlantUML ci-dessus\\
+sur \url{https://www.plantuml.com/plantuml/}}}
+\caption{Diagramme de cas d'utilisation global de SkillSync}
+\label{fig:usecase-global}
+\end{figure}
+
+\subsection{Spécification des besoins non fonctionnels}
+\begin{itemize}
+    \item \textbf{Performance} :
+    \begin{itemize}
+        \item Temps de réponse API < 2 secondes
+        \item Analyse de CV < 5 secondes
+        \item Génération de portfolio < 10 secondes
+    \end{itemize}
+    
+    \item \textbf{Sécurité} :
+    \begin{itemize}
+        \item Authentification JWT avec tokens d'accès et de rafraîchissement
+        \item Hachage des mots de passe avec bcrypt
+        \item Protection CORS configurée
+        \item Rate limiting (100 requêtes/minute)
+        \item Validation des entrées utilisateur
+    \end{itemize}
+    
+    \item \textbf{Fiabilité} :
+    \begin{itemize}
+        \item Disponibilité > 99\%
+        \item Gestion des erreurs avec messages explicites
+        \item Logs détaillés pour le debugging
+    \end{itemize}
+    
+    \item \textbf{Utilisabilité} :
+    \begin{itemize}
+        \item Interface responsive (mobile, tablette, desktop)
+        \item Navigation intuitive avec fil d'Ariane
+        \item Messages de feedback clairs
+        \item Accessibilité WCAG 2.1 niveau AA
+    \end{itemize}
+    
+    \item \textbf{Maintenabilité} :
+    \begin{itemize}
+        \item Architecture modulaire
+        \item Code documenté
+        \item Tests unitaires et d'intégration
+        \item Déploiement containerisé (Docker)
+    \end{itemize}
+\end{itemize}
+
+\section{Diagramme de classes global}
+La figure \ref{fig:class-global} présente le diagramme de classes global de l'application.
+
+% Code PlantUML pour le diagramme de classes
+\begin{verbatim}
+@startuml
+skinparam classAttributeIconSize 0
+
+class User {
+    -id: int
+    -email: string
+    -username: string
+    -hashed_password: string
+    -full_name: string
+    -is_active: boolean
+    -created_at: datetime
+    +register()
+    +login()
+    +logout()
+}
+
+class RefreshToken {
+    -id: int
+    -token: string
+    -user_id: int
+    -expires_at: datetime
+    -revoked: boolean
+    +create()
+    +revoke()
+    +is_valid()
+}
+
+class CVAnalysis {
+    -id: int
+    -user_id: int
+    -filename: string
+    -raw_text: string
+    -analysis_result: json
+    -ats_score: float
+    -created_at: datetime
+    +analyze()
+    +extract_skills()
+    +calculate_ats_score()
+}
+
+class Skill {
+    -id: int
+    -name: string
+    -category: string
+    -confidence: float
+    -source: string
+}
+
+class Portfolio {
+    -id: int
+    -user_id: int
+    -template: string
+    -color_scheme: string
+    -content: json
+    -file_path: string
+    -created_at: datetime
+    +generate()
+    +customize()
+    +export()
+}
+
+class JobSearch {
+    -id: int
+    -user_id: int
+    -query: string
+    -location: string
+    -filters: json
+    -results: json
+    -created_at: datetime
+    +search()
+    +filter()
+    +match_with_cv()
+}
+
+class JobOffer {
+    -id: int
+    -title: string
+    -company: string
+    -location: string
+    -description: string
+    -salary: string
+    -source: string
+    -matching_score: float
+}
+
+class CareerGuidance {
+    -id: int
+    -user_id: int
+    -current_skills: json
+    -target_role: string
+    -recommendations: json
+    -learning_path: json
+    -created_at: datetime
+    +analyze_career()
+    +generate_recommendations()
+    +suggest_learning_path()
+}
+
+class Recommendation {
+    -id: int
+    -type: string
+    -title: string
+    -description: string
+    -priority: string
+    -estimated_time: string
+    -resources: json
+}
+
+User "1" -- "*" RefreshToken
+User "1" -- "*" CVAnalysis
+User "1" -- "*" Portfolio
+User "1" -- "*" JobSearch
+User "1" -- "*" CareerGuidance
+CVAnalysis "1" -- "*" Skill
+JobSearch "1" -- "*" JobOffer
+CareerGuidance "1" -- "*" Recommendation
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][10cm][c]{0.9\textwidth}{\centering\textbf{Diagramme de classes global}\\[5mm]
+\small Générer avec le code PlantUML ci-dessus\\
+sur \url{https://www.plantuml.com/plantuml/}}}
+\caption{Diagramme de classes global de SkillSync}
+\label{fig:class-global}
+\end{figure}
+
+\section{Planification du travail}
+
+\subsection{Répartition des releases}
+\begin{longtable}{|m{2cm}|m{9cm}|m{3cm}|}
+\hline 
+\textbf{Release} & \textbf{Contenu} & \textbf{Durée} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Release 1 & 
+\begin{itemize}
+    \item Sprint 1 : Authentification et gestion utilisateurs
+    \item Sprint 2 : Analyse de CV et extraction de compétences
+\end{itemize}
+& 4 semaines \\
+\hline 
+Release 2 & 
+\begin{itemize}
+    \item Sprint 3 : Génération de portfolio
+    \item Sprint 4 : Recherche d'emploi et matching
+\end{itemize}
+& 4 semaines \\
+\hline
+Release 3 & 
+\begin{itemize}
+    \item Sprint 5 : Module de guidance de carrière
+    \item Sprint 6 : Dashboard et optimisations
+\end{itemize}
+& 4 semaines \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Répartition des releases}
+\label{tab:releases}
+\end{longtable}
+
+\subsection{Product Backlog global}
+\begin{longtable}{|m{1cm}|m{8cm}|m{2cm}|m{2cm}|}
+\hline 
+\textbf{ID} & \textbf{User Story} & \textbf{Sprint} & \textbf{Points} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+US1 & En tant qu'utilisateur, je veux m'inscrire pour créer un compte & 1 & 3 \\
+\hline
+US2 & En tant qu'utilisateur, je veux me connecter de manière sécurisée & 1 & 5 \\
+\hline
+US3 & En tant qu'utilisateur, je veux télécharger mon CV pour l'analyser & 2 & 5 \\
+\hline
+US4 & En tant qu'utilisateur, je veux voir mes compétences extraites & 2 & 8 \\
+\hline
+US5 & En tant qu'utilisateur, je veux voir mon score ATS avec explications & 2 & 5 \\
+\hline
+US6 & En tant qu'utilisateur, je veux générer un portfolio automatiquement & 3 & 8 \\
+\hline
+US7 & En tant qu'utilisateur, je veux personnaliser mon portfolio & 3 & 5 \\
+\hline
+US8 & En tant qu'utilisateur, je veux rechercher des offres d'emploi & 4 & 5 \\
+\hline
+US9 & En tant qu'utilisateur, je veux voir le matching avec mon CV & 4 & 8 \\
+\hline
+US10 & En tant qu'utilisateur, je veux des recommandations de carrière & 5 & 8 \\
+\hline
+US11 & En tant qu'utilisateur, je veux un parcours de formation suggéré & 5 & 5 \\
+\hline
+US12 & En tant qu'utilisateur, je veux voir mon tableau de bord & 6 & 5 \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Product Backlog global}
+\label{tab:backlog}
+\end{longtable}
+
+\section{Architecture globale}
+
+\subsection{Architecture technique}
+SkillSync adopte une architecture moderne basée sur la séparation frontend/backend :
+
+\begin{itemize}
+    \item \textbf{Frontend} : Application React avec TypeScript
+    \begin{itemize}
+        \item Single Page Application (SPA)
+        \item State management avec React hooks
+        \item Routing avec React Router
+        \item Styling avec Tailwind CSS
+    \end{itemize}
+    
+    \item \textbf{Backend} : API REST avec FastAPI (Python)
+    \begin{itemize}
+        \item Framework asynchrone haute performance
+        \item Documentation automatique Swagger/OpenAPI
+        \item Validation avec Pydantic
+        \item ORM SQLAlchemy
+    \end{itemize}
+    
+    \item \textbf{Base de données} : PostgreSQL (production) / SQLite (développement)
+    
+    \item \textbf{IA/ML} :
+    \begin{itemize}
+        \item BERT NER pour l'extraction d'entités
+        \item Sentence-Transformers pour les embeddings
+        \item spaCy pour le NLP
+    \end{itemize}
+\end{itemize}
+
+% Code PlantUML pour l'architecture
+\begin{verbatim}
+@startuml
+!define RECTANGLE class
+
+skinparam componentStyle rectangle
+
+package "Frontend (React + TypeScript)" {
+    [Pages] --> [Components]
+    [Components] --> [Services]
+    [Services] --> [API Client (Axios)]
+}
+
+package "Backend (FastAPI)" {
+    [Routers] --> [Services]
+    [Services] --> [Repositories]
+    [Repositories] --> [Models]
+    [Services] --> [ML Modules]
+}
+
+package "ML/AI Layer" {
+    [BERT NER Model]
+    [Sentence Transformers]
+    [spaCy NLP]
+}
+
+package "Data Layer" {
+    database "PostgreSQL" as DB
+    database "File Storage" as FS
+}
+
+[API Client (Axios)] --> [Routers] : HTTP/REST
+[ML Modules] --> [BERT NER Model]
+[ML Modules] --> [Sentence Transformers]
+[ML Modules] --> [spaCy NLP]
+[Repositories] --> DB
+[Services] --> FS
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][8cm][c]{0.9\textwidth}{\centering\textbf{Architecture technique de SkillSync}\\[5mm]
+\small Générer avec le code PlantUML ci-dessus}}
+\caption{Architecture technique de SkillSync}
+\label{fig:architecture}
+\end{figure}
+
+\section*{Conclusion}
+Dans ce chapitre, nous avons analysé les besoins fonctionnels et non fonctionnels de la plateforme SkillSync. Nous avons identifié les acteurs, établi les cas d'utilisation et présenté l'architecture globale. Le chapitre suivant détaillera la première release concernant l'authentification et l'analyse de CV.

@@ -1,0 +1,530 @@
+\chapter{Release 1 : Fondations de la plateforme}
+
+\section*{Introduction}
+Ce chapitre présente la première release de SkillSync qui établit les fondations de la plateforme. Elle comprend deux sprints : le premier dédié à l'authentification et la gestion des utilisateurs, le second à l'analyse intelligente des CV.
+
+\section{Sprint 1 : Authentification et gestion des utilisateurs}
+
+\subsection{Objectifs du sprint}
+\begin{itemize}
+    \item Mettre en place un système d'authentification sécurisé basé sur JWT
+    \item Implémenter l'inscription et la connexion des utilisateurs
+    \item Gérer les tokens d'accès et de rafraîchissement
+    \item Protéger les routes API sensibles
+\end{itemize}
+
+\subsection{Backlog du Sprint 1}
+\begin{longtable}{|m{1cm}|m{7cm}|m{3cm}|m{2cm}|}
+\hline 
+\textbf{ID} & \textbf{Tâche} & \textbf{Priorité} & \textbf{État} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+T1.1 & Création du modèle User avec SQLAlchemy & Haute & Terminé \\
+\hline
+T1.2 & Implémentation du hachage de mot de passe (bcrypt) & Haute & Terminé \\
+\hline
+T1.3 & Création des endpoints d'inscription & Haute & Terminé \\
+\hline
+T1.4 & Création des endpoints de connexion & Haute & Terminé \\
+\hline
+T1.5 & Génération et validation des tokens JWT & Haute & Terminé \\
+\hline
+T1.6 & Implémentation du token de rafraîchissement & Moyenne & Terminé \\
+\hline
+T1.7 & Middleware de protection des routes & Haute & Terminé \\
+\hline
+T1.8 & Interface de connexion React & Haute & Terminé \\
+\hline
+T1.9 & Interface d'inscription React & Haute & Terminé \\
+\hline
+T1.10 & Gestion du state d'authentification & Moyenne & Terminé \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Backlog du Sprint 1}
+\label{tab:sprint1-backlog}
+\end{longtable}
+
+\subsection{Diagramme de cas d'utilisation - Authentification}
+
+\begin{verbatim}
+@startuml
+left to right direction
+actor "Visiteur" as V
+actor "Utilisateur" as U
+
+rectangle "Module Authentification" {
+    usecase "S'inscrire" as UC1
+    usecase "Se connecter" as UC2
+    usecase "Se déconnecter" as UC3
+    usecase "Rafraîchir token" as UC4
+    usecase "Réinitialiser mot de passe" as UC5
+}
+
+V --> UC1
+V --> UC2
+U --> UC2
+U --> UC3
+U --> UC4
+U --> UC5
+
+UC2 .> UC4 : <<extend>>
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Diagramme de cas d'utilisation - Authentification}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Cas d'utilisation du module authentification}
+\label{fig:usecase-auth}
+\end{figure}
+
+\subsection{Diagramme de séquence - Connexion}
+
+\begin{verbatim}
+@startuml
+actor Utilisateur
+participant "Frontend\nReact" as FE
+participant "Backend\nFastAPI" as BE
+database "PostgreSQL" as DB
+
+Utilisateur -> FE : Saisir email/mot de passe
+FE -> BE : POST /api/v1/auth/login
+BE -> DB : Rechercher utilisateur par email
+DB --> BE : Données utilisateur
+BE -> BE : Vérifier mot de passe (bcrypt)
+alt Authentification réussie
+    BE -> BE : Générer access_token (15min)
+    BE -> BE : Générer refresh_token (7j)
+    BE -> DB : Sauvegarder refresh_token
+    BE --> FE : {access_token, refresh_token, user}
+    FE -> FE : Stocker tokens (localStorage)
+    FE --> Utilisateur : Redirection Dashboard
+else Authentification échouée
+    BE --> FE : 401 Unauthorized
+    FE --> Utilisateur : Message d'erreur
+end
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][8cm][c]{0.9\textwidth}{\centering\textbf{Diagramme de séquence - Connexion}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Séquence de connexion utilisateur}
+\label{fig:seq-login}
+\end{figure}
+
+\subsection{Diagramme de classes - Module Auth}
+
+\begin{verbatim}
+@startuml
+class User {
+    -id: int
+    -email: str
+    -username: str
+    -hashed_password: str
+    -full_name: str
+    -is_active: bool
+    -created_at: datetime
+    +verify_password(password): bool
+}
+
+class RefreshToken {
+    -id: int
+    -token: str
+    -user_id: int
+    -expires_at: datetime
+    -revoked: bool
+    +is_valid(): bool
+    +revoke(): void
+}
+
+class AuthService {
+    +register(user_data): User
+    +login(credentials): TokenPair
+    +logout(token): void
+    +refresh(refresh_token): TokenPair
+    +get_current_user(token): User
+}
+
+class JWTHandler {
+    -secret_key: str
+    -algorithm: str
+    +create_access_token(data): str
+    +create_refresh_token(data): str
+    +verify_token(token): dict
+}
+
+User "1" -- "*" RefreshToken
+AuthService --> User
+AuthService --> RefreshToken
+AuthService --> JWTHandler
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][7cm][c]{0.85\textwidth}{\centering\textbf{Diagramme de classes - Module Auth}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Classes du module authentification}
+\label{fig:class-auth}
+\end{figure}
+
+\subsection{Implémentation}
+
+\subsubsection{Structure du code backend}
+\begin{verbatim}
+backend/
+├── auth/
+│   ├── __init__.py
+│   ├── router.py      # Endpoints API
+│   ├── schemas.py     # Modèles Pydantic
+│   ├── service.py     # Logique métier
+│   └── jwt_handler.py # Gestion JWT
+├── models/
+│   └── user.py        # Modèle SQLAlchemy
+└── database.py        # Configuration DB
+\end{verbatim}
+
+\subsubsection{Extrait de code - Endpoint de connexion}
+\begin{lstlisting}[language=Python, caption={Endpoint de connexion (router.py)}]
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    credentials: UserLogin,
+    db: Session = Depends(get_db)
+):
+    # Recherche par email ou username
+    user = db.query(User).filter(
+        (User.email == credentials.email) | 
+        (User.username == credentials.username)
+    ).first()
+    
+    if not user or not verify_password(
+        credentials.password, 
+        user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+    
+    # Generation des tokens
+    access_token = create_access_token(
+        data={"sub": user.email}
+    )
+    refresh_token = create_refresh_token(
+        data={"sub": user.email}
+    )
+    
+    # Sauvegarde du refresh token
+    save_refresh_token(db, user.id, refresh_token)
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": UserResponse.from_orm(user)
+    }
+\end{lstlisting}
+
+\subsection{Interfaces utilisateur}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Interface de connexion}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_login.png}}
+\caption{Interface de connexion SkillSync}
+\label{fig:ui-login}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Interface d'inscription}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_register.png}}
+\caption{Interface d'inscription SkillSync}
+\label{fig:ui-register}
+\end{figure}
+
+\section{Sprint 2 : Analyse de CV intelligente}
+
+\subsection{Objectifs du sprint}
+\begin{itemize}
+    \item Implémenter l'upload et le parsing de CV multi-format
+    \item Développer l'extraction de compétences avec NER (BERT)
+    \item Calculer le score ATS avec critères explicables
+    \item Analyser les gaps de compétences
+    \item Générer des recommandations d'amélioration
+\end{itemize}
+
+\subsection{Backlog du Sprint 2}
+\begin{longtable}{|m{1cm}|m{7cm}|m{3cm}|m{2cm}|}
+\hline 
+\textbf{ID} & \textbf{Tâche} & \textbf{Priorité} & \textbf{État} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+T2.1 & Parsing PDF avec PyPDF2 & Haute & Terminé \\
+\hline
+T2.2 & Parsing DOCX avec python-docx & Haute & Terminé \\
+\hline
+T2.3 & OCR pour PDFs scannés (pytesseract) & Moyenne & Terminé \\
+\hline
+T2.4 & Intégration modèle BERT NER & Haute & Terminé \\
+\hline
+T2.5 & Extraction et catégorisation des skills & Haute & Terminé \\
+\hline
+T2.6 & Calcul du score ATS multicritères & Haute & Terminé \\
+\hline
+T2.7 & Matching avec taxonomies ESCO/O*NET & Moyenne & Terminé \\
+\hline
+T2.8 & Génération des recommandations & Haute & Terminé \\
+\hline
+T2.9 & Interface d'upload CV & Haute & Terminé \\
+\hline
+T2.10 & Dashboard d'analyse avec visualisations & Haute & Terminé \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Backlog du Sprint 2}
+\label{tab:sprint2-backlog}
+\end{longtable}
+
+\subsection{Diagramme de cas d'utilisation - Analyse CV}
+
+\begin{verbatim}
+@startuml
+left to right direction
+actor "Candidat" as U
+
+rectangle "Module Analyse CV" {
+    usecase "Télécharger CV" as UC1
+    usecase "Analyser CV" as UC2
+    usecase "Voir compétences extraites" as UC3
+    usecase "Voir score ATS" as UC4
+    usecase "Voir recommandations" as UC5
+    usecase "Sauvegarder analyse" as UC6
+    usecase "Historique analyses" as UC7
+}
+
+U --> UC1
+U --> UC2
+U --> UC3
+U --> UC4
+U --> UC5
+U --> UC6
+U --> UC7
+
+UC2 .> UC1 : <<include>>
+UC3 .> UC2 : <<include>>
+UC4 .> UC2 : <<include>>
+UC5 .> UC2 : <<include>>
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Diagramme de cas d'utilisation - Analyse CV}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Cas d'utilisation du module analyse CV}
+\label{fig:usecase-cv}
+\end{figure}
+
+\subsection{Diagramme de séquence - Analyse de CV}
+
+\begin{verbatim}
+@startuml
+actor Utilisateur
+participant "Frontend" as FE
+participant "CV Router" as API
+participant "CV Analyzer" as CA
+participant "BERT NER" as NER
+participant "ATS Scorer" as ATS
+database "PostgreSQL" as DB
+
+Utilisateur -> FE : Upload CV (PDF/DOCX)
+FE -> API : POST /api/v1/cv/analyze
+API -> CA : parse_document(file)
+CA -> CA : extract_text()
+CA -> NER : extract_entities(text)
+NER -> NER : tokenize()
+NER -> NER : predict_entities()
+NER --> CA : entities[skills, tools, tech]
+CA -> CA : categorize_skills()
+CA -> ATS : calculate_score(cv_data)
+ATS -> ATS : keywords_score()
+ATS -> ATS : structure_score()
+ATS -> ATS : format_score()
+ATS --> CA : ats_score + details
+CA -> CA : generate_recommendations()
+CA --> API : analysis_result
+API -> DB : save_analysis()
+API --> FE : CVAnalysisResponse
+FE --> Utilisateur : Afficher résultats
+@enduml
+\end{verbatim}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][9cm][c]{0.9\textwidth}{\centering\textbf{Diagramme de séquence - Analyse de CV}\\[3mm]
+\small Générer avec PlantUML}}
+\caption{Séquence d'analyse de CV}
+\label{fig:seq-cv}
+\end{figure}
+
+\subsection{Algorithme d'extraction NER avec BERT}
+
+L'extraction des compétences utilise le modèle \textbf{dslim/bert-base-NER} fine-tuné pour la reconnaissance d'entités nommées :
+
+\begin{lstlisting}[language=Python, caption={Extraction NER avec BERT}]
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+import torch
+
+class SkillExtractor:
+    def __init__(self):
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "dslim/bert-base-NER"
+        )
+        self.model = AutoModelForTokenClassification.from_pretrained(
+            "dslim/bert-base-NER"
+        )
+    
+    def extract_skills(self, text: str) -> List[Skill]:
+        # Tokenization
+        inputs = self.tokenizer(
+            text, 
+            return_tensors="pt",
+            truncation=True,
+            max_length=512
+        )
+        
+        # Prediction
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        
+        # Post-traitement
+        predictions = torch.argmax(outputs.logits, dim=2)
+        tokens = self.tokenizer.convert_ids_to_tokens(
+            inputs["input_ids"][0]
+        )
+        
+        # Extraction des entites
+        skills = self._extract_entities(tokens, predictions[0])
+        
+        # Categorisation
+        return self._categorize_skills(skills)
+\end{lstlisting}
+
+\subsection{Calcul du score ATS}
+
+Le score ATS est calculé selon plusieurs critères pondérés :
+
+\begin{longtable}{|m{5cm}|m{2cm}|m{7cm}|}
+\hline 
+\textbf{Critère} & \textbf{Poids} & \textbf{Description} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Mots-clés & 40\% & Correspondance avec les compétences recherchées \\
+\hline
+Structure & 25\% & Présence des sections standard (expérience, formation, etc.) \\
+\hline
+Format & 20\% & Lisibilité, absence d'éléments problématiques \\
+\hline
+Lisibilité & 15\% & Score Flesch-Kincaid, longueur des phrases \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Critères de calcul du score ATS}
+\label{tab:ats-criteria}
+\end{longtable}
+
+\begin{lstlisting}[language=Python, caption={Calcul du score ATS}]
+def calculate_ats_score(cv_data: dict) -> ATSScore:
+    keywords_score = analyze_keywords(cv_data["skills"])
+    structure_score = analyze_structure(cv_data["sections"])
+    format_score = analyze_format(cv_data["raw_text"])
+    readability_score = calculate_readability(cv_data["raw_text"])
+    
+    total_score = (
+        keywords_score * 0.40 +
+        structure_score * 0.25 +
+        format_score * 0.20 +
+        readability_score * 0.15
+    )
+    
+    return ATSScore(
+        total=total_score,
+        breakdown={
+            "keywords": keywords_score,
+            "structure": structure_score,
+            "format": format_score,
+            "readability": readability_score
+        },
+        recommendations=generate_ats_recommendations(...)
+    )
+\end{lstlisting}
+
+\subsection{Interface d'analyse CV}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][6cm][c]{0.85\textwidth}{\centering\textbf{Interface d'upload de CV}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_cv\_upload.png}}
+\caption{Interface d'upload de CV}
+\label{fig:ui-cv-upload}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][7cm][c]{0.85\textwidth}{\centering\textbf{Dashboard d'analyse CV}\\[3mm]
+\small Capture d'écran à ajouter\\
+Fichier : img/ui\_cv\_analysis.png}}
+\caption{Dashboard des résultats d'analyse}
+\label{fig:ui-cv-analysis}
+\end{figure}
+
+\section{Tests et validation}
+
+\subsection{Tests unitaires}
+\begin{longtable}{|m{4cm}|m{6cm}|m{3cm}|}
+\hline 
+\textbf{Test} & \textbf{Description} & \textbf{Résultat} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+test\_register & Inscription utilisateur valide & Pass \\
+\hline
+test\_login & Connexion avec credentials valides & Pass \\
+\hline
+test\_invalid\_login & Connexion avec mauvais mot de passe & Pass \\
+\hline
+test\_token\_refresh & Rafraîchissement du token expiré & Pass \\
+\hline
+test\_cv\_parse\_pdf & Parsing d'un CV PDF & Pass \\
+\hline
+test\_cv\_parse\_docx & Parsing d'un CV DOCX & Pass \\
+\hline
+test\_skill\_extraction & Extraction des compétences NER & Pass \\
+\hline
+test\_ats\_score & Calcul du score ATS & Pass \\
+\hline
+test\_recommendations & Génération recommandations & Pass \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Résultats des tests unitaires - Release 1}
+\label{tab:tests-r1}
+\end{longtable}
+
+\section*{Conclusion}
+La Release 1 a permis d'établir les fondations solides de SkillSync avec un système d'authentification sécurisé et un module d'analyse de CV intelligent utilisant des techniques NLP/NER avancées. Le chapitre suivant présentera la Release 2 dédiée à la génération de portfolio et au matching d'offres d'emploi.

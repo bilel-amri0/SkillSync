@@ -1,0 +1,235 @@
+\chapter{Cadre du projet}
+
+\section*{Introduction}
+Dans ce chapitre, nous situons le projet SkillSync dans son cadre global. Nous commençons par présenter le contexte et les objectifs du projet. Puis, nous analysons les solutions existantes sur le marché. Enfin, nous présentons la méthodologie de gestion de projet adoptée ainsi que l'environnement de travail.
+
+\section{Cadre général du projet}
+
+\subsection{Contexte du projet}
+Le marché de l'emploi actuel connaît une transformation profonde sous l'effet de la digitalisation. Les systèmes de suivi des candidatures (ATS) sont devenus incontournables dans les processus de recrutement des entreprises. Selon une étude récente, plus de 75\% des CV sont rejetés automatiquement par ces systèmes avant même d'être consultés par un recruteur humain.
+
+Cette réalité crée un fossé entre les compétences réelles des candidats et leur capacité à les présenter de manière optimale. Les chercheurs d'emploi, particulièrement les jeunes diplômés et les professionnels en reconversion, se retrouvent souvent démunis face à ces technologies opaques.
+
+C'est dans ce contexte que naît le projet \textbf{SkillSync}, une plateforme qui vise à démocratiser l'accès aux outils d'intelligence artificielle pour accompagner les candidats dans leur recherche d'emploi et leur développement de carrière.
+
+\subsection{Problématique}
+Les candidats font face à plusieurs obstacles majeurs :
+\begin{itemize}
+    \item \textbf{Opacité des systèmes ATS} : Les candidats ne comprennent pas pourquoi leurs CV sont rejetés
+    \item \textbf{Manque de feedback} : Absence de retour constructif sur les candidatures
+    \item \textbf{Temps de préparation} : Adaptation manuelle de chaque CV, chronophage et fastidieuse
+    \item \textbf{Absence de vision globale} : Difficulté à identifier les compétences à développer
+    \item \textbf{Portfolio professionnel} : Création technique complexe pour les non-développeurs
+\end{itemize}
+
+\subsection{Objectifs du projet}
+Le projet SkillSync vise à :
+\begin{enumerate}
+    \item \textbf{Analyser intelligemment les CV} en utilisant des techniques NLP/NER avancées
+    \item \textbf{Fournir des recommandations explicables} avec justifications claires
+    \item \textbf{Automatiser la génération de portfolio} professionnel
+    \item \textbf{Optimiser le matching} entre CV et offres d'emploi
+    \item \textbf{Guider les parcours de carrière} avec des recommandations personnalisées
+    \item \textbf{Intégrer plusieurs sources d'emploi} via des APIs tierces
+\end{enumerate}
+
+\section{Étude de l'existant}
+Avant de concevoir notre solution, nous avons analysé les plateformes existantes pour identifier leurs forces et faiblesses.
+
+\subsection{Étude de LinkedIn}
+\subsubsection{Description}
+LinkedIn est le réseau social professionnel leader mondial avec plus de 900 millions d'utilisateurs. La plateforme offre des fonctionnalités de recherche d'emploi, de networking et de présentation de profil professionnel.
+
+\subsubsection{Fonctionnalités principales}
+\begin{itemize}
+    \item Création de profil professionnel en ligne
+    \item Recherche et candidature aux offres d'emploi
+    \item Networking avec d'autres professionnels
+    \item Recommandations d'offres basées sur le profil
+    \item LinkedIn Learning pour la formation
+\end{itemize}
+
+\subsubsection{Points forts et points faibles}
+\begin{longtable}{|m{7.5cm}|m{7.5cm}|}
+\hline 
+\textbf{Points forts} & \textbf{Points faibles} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Large base d'utilisateurs et d'offres & Analyse de CV peu détaillée \\
+Interface intuitive et moderne & Pas de génération de portfolio \\
+Intégration avec les recruteurs & Recommandations peu explicables \\
+Fonctionnalités de networking & Version gratuite limitée \\
+\hline 
+\captionsetup{justification=centering,margin=2cm}
+\caption{Points forts et points faibles de LinkedIn}
+\label{tab:linkedin}
+\end{longtable}
+
+\subsection{Étude de Resume.io}
+\subsubsection{Description}
+Resume.io est une plateforme spécialisée dans la création de CV professionnels avec des templates modernes et optimisés pour les ATS.
+
+\subsubsection{Fonctionnalités principales}
+\begin{itemize}
+    \item Templates de CV professionnels
+    \item Export multi-format (PDF, Word)
+    \item Conseils de rédaction intégrés
+    \item Score ATS basique
+\end{itemize}
+
+\subsubsection{Points forts et points faibles}
+\begin{longtable}{|m{7.5cm}|m{7.5cm}|}
+\hline 
+\textbf{Points forts} & \textbf{Points faibles} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Templates esthétiques et professionnels & Pas d'analyse sémantique des compétences \\
+Interface de création intuitive & Absence de matching avec offres \\
+Export facile & Pas de recommandations de carrière \\
+Score ATS basique & Modèle freemium restrictif \\
+\hline 
+\captionsetup{justification=centering,margin=2cm}
+\caption{Points forts et points faibles de Resume.io}
+\label{tab:resumeio}
+\end{longtable}
+
+\subsection{Étude de Jobscan}
+\subsubsection{Description}
+Jobscan est un outil d'optimisation de CV qui compare le contenu du CV avec les descriptions de poste pour améliorer le taux de correspondance ATS.
+
+\subsubsection{Fonctionnalités principales}
+\begin{itemize}
+    \item Comparaison CV vs offre d'emploi
+    \item Score de matching par mots-clés
+    \item Suggestions d'optimisation
+    \item Analyse de la structure du CV
+\end{itemize}
+
+\subsubsection{Points forts et points faibles}
+\begin{longtable}{|m{7.5cm}|m{7.5cm}|}
+\hline 
+\textbf{Points forts} & \textbf{Points faibles} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Analyse détaillée mots-clés & Pas de génération de portfolio \\
+Score ATS précis & Matching basé uniquement sur les mots-clés \\
+Suggestions concrètes & Pas d'analyse sémantique profonde \\
+Interface claire & Coût élevé pour la version complète \\
+\hline 
+\captionsetup{justification=centering,margin=2cm}
+\caption{Points forts et points faibles de Jobscan}
+\label{tab:jobscan}
+\end{longtable}
+
+\section{Synthèse et solution proposée}
+L'analyse comparative révèle qu'aucune solution existante n'offre une approche complète combinant :
+\begin{itemize}
+    \item Analyse NLP/NER avancée des compétences
+    \item IA explicable avec justifications
+    \item Génération automatique de portfolio
+    \item Matching sémantique (pas seulement mots-clés)
+    \item Guidance de carrière personnalisée
+    \item Gratuité des fonctionnalités essentielles
+\end{itemize}
+
+\textbf{SkillSync} se positionne comme une solution complète et accessible qui comble ces lacunes en proposant une plateforme open-source utilisant les dernières avancées en IA.
+
+\begin{longtable}{|m{3cm}|C{2cm}|C{2cm}|C{2cm}|C{2.5cm}|}
+\hline 
+\textbf{Fonctionnalité} & \textbf{LinkedIn} & \textbf{Resume.io} & \textbf{Jobscan} & \textbf{SkillSync} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+Analyse NER & Non & Non & Non & \textbf{Oui} \\
+\hline
+IA Explicable & Non & Non & Partiel & \textbf{Oui} \\
+\hline
+Portfolio auto & Non & Non & Non & \textbf{Oui} \\
+\hline
+Matching sémantique & Partiel & Non & Non & \textbf{Oui} \\
+\hline
+Guidance carrière & Partiel & Non & Non & \textbf{Oui} \\
+\hline
+Gratuit & Partiel & Non & Non & \textbf{Oui} \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Tableau comparatif des solutions}
+\label{tab:comparatif}
+\end{longtable}
+
+\section{Méthodologie de gestion de projet}
+\subsection{Choix de la méthodologie Scrum}
+Pour la réalisation de ce projet, nous avons adopté la méthodologie \textbf{Scrum}, une approche agile qui offre plusieurs avantages :
+
+\begin{itemize}
+    \item \textbf{Flexibilité} : Adaptation rapide aux changements de besoins
+    \item \textbf{Transparence} : Visibilité sur l'avancement via les daily meetings
+    \item \textbf{Livraisons fréquentes} : Sprints courts permettant des démonstrations régulières
+    \item \textbf{Amélioration continue} : Rétrospectives pour optimiser le processus
+\end{itemize}
+
+\subsection{Organisation du projet}
+Le projet est structuré en \textbf{3 Releases} contenant \textbf{6 Sprints} :
+
+\begin{itemize}
+    \item \textbf{Release 1 - Fondations} : Authentification + Analyse de CV (Sprints 1-2)
+    \item \textbf{Release 2 - Fonctionnalités avancées} : Portfolio + Matching (Sprints 3-4)
+    \item \textbf{Release 3 - Intelligence} : Guidance carrière + Recommandations (Sprints 5-6)
+\end{itemize}
+
+%\begin{figure}[H]
+%\centering
+%\includegraphics[width=0.9\columnwidth]{img/scrum_process.png}
+%\caption{Processus Scrum adopté}
+%\label{fig:scrum}
+%\end{figure}
+
+\section{Environnement de travail}
+\subsection{Environnement matériel}
+Le développement a été réalisé sur :
+\begin{itemize}
+    \item PC portable avec processeur Intel Core i7
+    \item 16 Go de RAM
+    \item SSD 512 Go
+    \item Système d'exploitation : Windows 11
+\end{itemize}
+
+\subsection{Environnement logiciel}
+\begin{longtable}{|m{4cm}|m{4cm}|m{6cm}|}
+\hline 
+\textbf{Catégorie} & \textbf{Outil} & \textbf{Utilisation} \\
+\hline
+\endhead
+\endfoot
+\endlastfoot
+\hline 
+IDE & Visual Studio Code & Développement frontend et backend \\
+\hline
+Versioning & Git / GitHub & Gestion du code source \\
+\hline
+API Testing & Postman & Test des endpoints REST \\
+\hline
+Base de données & PostgreSQL / SQLite & Stockage des données \\
+\hline
+Conteneurisation & Docker & Déploiement et portabilité \\
+\hline
+Documentation & Swagger / OpenAPI & Documentation API \\
+\hline
+\captionsetup{justification=centering,margin=2cm}
+\caption{Outils de développement utilisés}
+\label{tab:outils}
+\end{longtable}
+
+\section*{Conclusion}
+Dans ce chapitre, nous avons présenté le contexte et les objectifs du projet SkillSync, analysé les solutions existantes et justifié nos choix méthodologiques et techniques. Le chapitre suivant sera consacré à l'analyse détaillée des besoins fonctionnels et non fonctionnels.
